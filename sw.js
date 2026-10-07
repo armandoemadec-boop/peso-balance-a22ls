@@ -1,5 +1,5 @@
 // Cambiar VERSION al publicar una actualización para que los teléfonos descarguen los archivos nuevos.
-const VERSION = 'a22ls-v10';
+const VERSION = 'a22ls-v11';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {

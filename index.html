@@ -43,7 +43,9 @@ html { -webkit-text-size-adjust: 100%; }
 [hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.4; }
 .wrap { max-width: 460px; margin: 0 auto; padding-inline: 16px; padding-block: 14px 32px; display: flex; flex-direction: column; gap: 14px; }
-h1 { font-family: var(--display); font-weight: 700; font-size: 24px; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+h1 { font-family: var(--display); font-weight: 700; font-size: 34px; line-height: 1.05; margin: 0; letter-spacing: .05em; }
+.eyebrow { font-family: var(--display); font-weight: 600; font-size: 12.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); margin: 0 0 2px; }
+.linkbtn { border: 0; padding: 6px 0; margin: 2px 0 0; font-size: 13.5px; background: transparent; }
 .sub { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
 h2 { font-family: var(--display); font-weight: 600; font-size: 13px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
 .num { font-family: var(--display); font-variant-numeric: tabular-nums; }
@@ -53,7 +55,7 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 13px; letter-spac
 .acrow { display: flex; gap: 8px; align-items: center; }
 .acrow select { flex: 1; min-width: 0; font: 700 20px var(--display); letter-spacing: .04em; color: var(--ink); background: var(--bg);
   border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
-.acinfo { margin: 8px 0 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.acinfo { margin: 4px 0 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .note { margin: 8px 0 0; font-size: 13px; padding: 8px 10px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); }
 button { font: 600 14px var(--body); color: var(--accent); background: transparent; border: 1px solid var(--accent); border-radius: 8px; padding: 8px 12px; cursor: pointer; white-space: nowrap; }
 button.primary { background: var(--accent); color: var(--accent-ink); }
@@ -154,19 +156,58 @@ svg text { font-family: var(--display); font-size: 11px; fill: var(--muted); }
 <body>
 <div class="wrap">
   <header>
-    <h1>Peso y Balance A-22LS</h1>
-    <p class="sub">Aeroprakt A-22LS · método de momentos del POH, sección 7 · datum: brida del motor</p>
+    <p class="eyebrow">Peso y Balance · Aeroprakt A-22LS</p>
+    <h1 id="hreg"></h1>
+    <p class="acinfo" id="ac-info"></p>
+    <button type="button" class="linkbtn" id="go-ac">Cambiar o editar avión ↓</button>
+    <p class="note" id="ac-example" hidden>Está usando el avión de ejemplo del POH. Agregue su avión con matrícula y pesaje en <b>Aviones</b>, al final de la página.</p>
   </header>
 
-  <section class="panel" aria-label="Avión">
-    <h2>Avión</h2>
+  <div class="verdict" id="verdict" role="status" aria-live="polite">
+    <div class="state"><span class="reg" id="vreg"></span><span id="vstate"></span></div>
+    <div class="figs"><div id="vtow"></div><div id="vcg"></div></div>
+  </div>
+
+  <section class="panel" aria-label="Datos del vuelo">
+    <h2>Datos del vuelo · gire las ruedas</h2>
+    <div class="wheels" id="wheels"></div>
+    <div class="dens">
+      <div class="dlabel">Densidad del combustible<small>0,70 a 0,75 kg/l · estándar 0,75</small></div>
+      <div class="stepper"><button type="button" id="dens-dn" aria-label="Bajar densidad">−</button><output id="dens-val" aria-live="polite"></output><button type="button" id="dens-up" aria-label="Subir densidad">+</button></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Centro de gravedad</h2>
+    <table>
+      <thead><tr><th>Condición</th><th>Peso kg</th><th>CG m</th><th>% MAC</th><th></th></tr></thead>
+      <tbody id="cgrows"></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>Envolvente de CG</h2>
+    <svg id="chart" viewBox="0 0 340 230" role="img" aria-label="Envolvente de peso y centro de gravedad"></svg>
+    <div class="legend">
+      <span><i style="background:var(--bad);border-radius:50%"></i>Despegue</span>
+      <span><i style="background:var(--ok)"></i>Aterrizaje</span>
+      <span><i style="background:var(--muted);transform:rotate(45deg)"></i>Sin combustible útil</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Verificaciones</h2>
+    <ul class="checks" id="checks"></ul>
+    <div class="margin"><span>Margen de peso al despegue</span><span class="num" id="margin"></span></div>
+  </section>
+
+  <section class="panel" id="avion" aria-label="Aviones">
+    <h2>Aviones · cambiar, editar o agregar</h2>
     <div class="acrow">
       <select id="ac-sel" aria-label="Matrícula del avión"></select>
       <button type="button" id="ac-edit">Editar</button>
       <button type="button" id="ac-new" class="primary">Nuevo</button>
     </div>
-    <p class="acinfo" id="ac-info"></p>
-    <p class="note" id="ac-example" hidden>Está usando el avión de ejemplo del POH. Toque <b>Nuevo</b> para agregar su avión con la matrícula y su pesaje.</p>
   </section>
 
   <section class="panel" id="editor" hidden aria-labelledby="ed-title">
@@ -207,45 +248,7 @@ svg text { font-family: var(--display); font-size: 11px; fill: var(--muted); }
     </form>
   </section>
 
-  <div class="verdict" id="verdict" role="status" aria-live="polite">
-    <div class="state"><span class="reg" id="vreg"></span><span id="vstate"></span></div>
-    <div class="figs"><div id="vtow"></div><div id="vcg"></div></div>
-  </div>
-
-  <section class="panel" aria-label="Datos del vuelo">
-    <h2>Datos del vuelo · gire las ruedas</h2>
-    <div class="wheels" id="wheels"></div>
-    <div class="dens">
-      <div class="dlabel">Densidad del combustible<small>0,70 a 0,75 kg/l · estándar 0,75</small></div>
-      <div class="stepper"><button type="button" id="dens-dn" aria-label="Bajar densidad">−</button><output id="dens-val" aria-live="polite"></output><button type="button" id="dens-up" aria-label="Subir densidad">+</button></div>
-    </div>
-  </section>
-
-  <section class="panel">
-    <h2>Centro de gravedad</h2>
-    <table>
-      <thead><tr><th>Condición</th><th>Peso kg</th><th>CG m</th><th>% MAC</th><th></th></tr></thead>
-      <tbody id="cgrows"></tbody>
-    </table>
-  </section>
-
-  <section class="panel">
-    <h2>Envolvente de CG</h2>
-    <svg id="chart" viewBox="0 0 340 230" role="img" aria-label="Envolvente de peso y centro de gravedad"></svg>
-    <div class="legend">
-      <span><i style="background:var(--bad);border-radius:50%"></i>Despegue</span>
-      <span><i style="background:var(--ok)"></i>Aterrizaje</span>
-      <span><i style="background:var(--muted);transform:rotate(45deg)"></i>Sin combustible útil</span>
-    </div>
-  </section>
-
-  <section class="panel">
-    <h2>Verificaciones</h2>
-    <ul class="checks" id="checks"></ul>
-    <div class="margin"><span>Margen de peso al despegue</span><span class="num" id="margin"></span></div>
-  </section>
-
-  <p class="fixed">Valores fijos del modelo A-22LS (POH): CG 1,47 a 1,78 m (19 a 37 % MAC) · equipaje máx. 20 kg · brazos: tripulación 1,60 m, equipaje 2,30 m, combustible 2,00 m · combustible no utilizable 1 l (0,5 l por estanque), que no se puede consumir y cuyo peso se mantiene a bordo.</p>
+  <p class="fixed">Método de momentos del POH, sección 7; datum: brida del motor. Valores fijos del modelo A-22LS: CG 1,47 a 1,78 m (19 a 37 % MAC) · equipaje máx. 20 kg · brazos: tripulación 1,60 m, equipaje 2,30 m, combustible 2,00 m · combustible no utilizable 1 l (0,5 l por estanque), que no se puede consumir y cuyo peso se mantiene a bordo.</p>
   <p class="warn"><b>Importante:</b> los aviones se guardan solo en este teléfono. Use el pesaje vigente de cada matrícula. Esta app es una ayuda de cálculo y no reemplaza al POH ni la responsabilidad del piloto al mando.</p>
 </div>
 
@@ -325,6 +328,7 @@ if (typeof document !== 'undefined') (function () {
     sel.innerHTML = '';
     for (const a of allAc()) { const o = document.createElement('option'); o.value = a.reg; o.textContent = a.reg; sel.appendChild(o); }
     sel.value = ac.reg;
+    $('hreg').textContent = ac.reg;
     $('ac-edit').disabled = !!ac.example;
     $('ac-example').hidden = !ac.example;
     $('ac-info').textContent = 'Peso vacío ' + fmt(ac.we, 1) + ' kg · CG vacío ' + fmt(ac.xe, 3) + ' m · ' + ac.cap + ' l · MTOW ' + toField(ac.mtow) + ' kg' +
@@ -337,7 +341,8 @@ if (typeof document !== 'undefined') (function () {
     if (wheels.fuel) { fillWheel(wheels.fuel); fillWheel(wheels.burn); save('a22ls-flight', v); }
     render();
   }
-  $('ac-sel').addEventListener('change', e => { closeEditor(); selectAc(e.target.value); });
+  $('ac-sel').addEventListener('change', e => { closeEditor(); selectAc(e.target.value); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  $('go-ac').addEventListener('click', () => $('avion').scrollIntoView({ behavior: 'smooth', block: 'start' }));
 
   // ---------------- editor
   let editing = null; // null = nuevo; matrícula = edición
@@ -386,6 +391,7 @@ if (typeof document !== 'undefined') (function () {
     fleet.list.push(res.ac);
     closeEditor();
     selectAc(res.ac.reg);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
   $('p-calc').addEventListener('click', () => {
     const g = id => parseNum($(id).value);
