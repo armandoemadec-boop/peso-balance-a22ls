@@ -108,6 +108,13 @@ details .fields { margin-top: 10px; }
 .wheel div.sel { color: var(--ink); font-weight: 700; font-size: 23px; }
 .wcol.over .wheel div.sel { color: var(--bad); }
 
+.dens { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.dens .dlabel { min-width: 0; font-weight: 600; font-size: 14px; }
+.dens small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+.stepper { display: flex; align-items: center; gap: 8px; }
+.stepper button { width: 40px; height: 40px; padding: 0; font-size: 22px; line-height: 1; }
+.stepper output { min-width: 78px; text-align: center; font: 700 20px var(--display); font-variant-numeric: tabular-nums; }
+
 /* tabla */
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 th { font-family: var(--display); font-weight: 600; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 0 0 6px 6px; }
@@ -201,6 +208,10 @@ svg text { font-family: var(--display); font-size: 11px; fill: var(--muted); }
   <section class="panel" aria-label="Datos del vuelo">
     <h2>Datos del vuelo · gire las ruedas</h2>
     <div class="wheels" id="wheels"></div>
+    <div class="dens">
+      <div class="dlabel">Densidad del combustible<small>0,70 a 0,75 kg/l · estándar 0,75</small></div>
+      <div class="stepper"><button type="button" id="dens-dn" aria-label="Bajar densidad">−</button><output id="dens-val" aria-live="polite"></output><button type="button" id="dens-up" aria-label="Subir densidad">+</button></div>
+    </div>
   </section>
 
   <section class="panel">
@@ -217,7 +228,7 @@ svg text { font-family: var(--display); font-size: 11px; fill: var(--muted); }
     <div class="legend">
       <span><i style="background:var(--bad);border-radius:50%"></i>Despegue</span>
       <span><i style="background:var(--ok)"></i>Aterrizaje</span>
-      <span><i style="background:var(--muted);transform:rotate(45deg)"></i>Combustible mínimo</span>
+      <span><i style="background:var(--muted);transform:rotate(45deg)"></i>Sin combustible útil</span>
     </div>
   </section>
 
@@ -227,12 +238,12 @@ svg text { font-family: var(--display); font-size: 11px; fill: var(--muted); }
     <div class="margin"><span>Margen de peso al despegue</span><span class="num" id="margin"></span></div>
   </section>
 
-  <p class="fixed">Valores fijos del modelo A-22LS (POH): CG 1,47 a 1,78 m (19 a 37 % MAC) · equipaje máx. 20 kg · brazos: tripulación 1,60 m, equipaje 2,30 m, combustible 2,00 m · combustible 0,75 kg/l · combustible no utilizable 1 l (0,5 l por estanque).</p>
+  <p class="fixed">Valores fijos del modelo A-22LS (POH): CG 1,47 a 1,78 m (19 a 37 % MAC) · equipaje máx. 20 kg · brazos: tripulación 1,60 m, equipaje 2,30 m, combustible 2,00 m · combustible no utilizable 1 l (0,5 l por estanque), cuyo peso se mantiene a bordo en la condición sin combustible útil.</p>
   <p class="warn"><b>Importante:</b> los aviones se guardan solo en este teléfono. Use el pesaje vigente de cada matrícula. Esta app es una ayuda de cálculo y no reemplaza al POH ni la responsabilidad del piloto al mando.</p>
 </div>
 
 <script>
-const K = { mtowMax: 600, fwd: 1.47, aft: 1.78, macFwd: 19, macAft: 37, armCrew: 1.60, armBag: 2.30, armFuel: 2.00, dens: 0.75, bagMax: 20, unusable: 1 /* 0,5 l por estanque × 2 */, noseArm: 0.532, mainArm: 1.794 };
+const K = { mtowMax: 600, fwd: 1.47, aft: 1.78, macFwd: 19, macAft: 37, armCrew: 1.60, armBag: 2.30, armFuel: 2.00, dens: 0.75, densMin: 0.70, densMax: 0.75, bagMax: 20, unusable: 1 /* 0,5 l por estanque × 2 */, noseArm: 0.532, mainArm: 1.794 };
 const MAC = (K.aft - K.fwd) / ((K.macAft - K.macFwd) / 100), LEMAC = K.fwd - K.macFwd / 100 * MAC;
 const EXAMPLE = { reg: 'Ejemplo POH', we: 318.1, xe: 1.512, cap: 90, mtow: 600, date: '', example: true };
 const REG_RE = /^[A-Z0-9]{5,6}$/;
@@ -245,15 +256,16 @@ function parseNum(x) {
 const ITEM = 38;
 
 function calc(ac, v) {
+  const dens = Math.min(Math.max(v.dens || K.dens, K.densMin), K.densMax);
   const pct = x => (x - LEMAC) / MAC * 100;
   const zfW = ac.we + v.pilot + v.pax + v.bag;
   const zfM = ac.we * ac.xe + (v.pilot + v.pax) * K.armCrew + v.bag * K.armBag;
-  const toW = zfW + v.fuel * K.dens, toM = zfM + v.fuel * K.dens * K.armFuel;
-  const ldW = toW - v.burn * K.dens, ldM = toM - v.burn * K.dens * K.armFuel;
+  // El combustible no utilizable queda siempre a bordo: lo consumido nunca supera el utilizable.
+  const usable = Math.max(0, v.fuel - K.unusable), burned = Math.min(v.burn, usable) * dens, rest = Math.min(v.fuel, K.unusable) * dens;
+  const toW = zfW + v.fuel * dens, toM = zfM + v.fuel * dens * K.armFuel;
+  const ldW = toW - burned, ldM = toM - burned * K.armFuel;
   const cond = (name, w, m) => { const cg = w > 0 ? m / w : 0; return { name, w, cg, pct: pct(cg), ok: w <= ac.mtow && cg >= K.fwd && cg <= K.aft }; };
-  // El combustible no utilizable queda siempre a bordo: la condición más liviana no es "sin combustible".
-  const rest = Math.min(v.fuel, K.unusable) * K.dens, usable = Math.max(0, v.fuel - K.unusable);
-  const to = cond('Despegue', toW, toM), ld = cond('Aterrizaje', ldW, ldM), zf = cond('Comb. mínimo', zfW + rest, zfM + rest * K.armFuel);
+  const to = cond('Despegue', toW, toM), ld = cond('Aterrizaje', ldW, ldM), zf = cond('Sin comb. útil', zfW + rest, zfM + rest * K.armFuel);
   const chk = (what, lim, val, unit, dec, min, max) => ({ what, lim, val, unit, dec, ok: val >= min && val <= max });
   const cgLim = 'entre 1,47 y 1,78 m';
   const es = n => String(n).replace('.', ',');
@@ -261,10 +273,10 @@ function calc(ac, v) {
     chk('Peso al despegue', 'máx. ' + es(ac.mtow) + ' kg', toW, 'kg', 1, 0, ac.mtow),
     chk('CG al despegue', cgLim, to.cg, 'm', 3, K.fwd, K.aft),
     chk('CG al aterrizaje', cgLim, ld.cg, 'm', 3, K.fwd, K.aft),
-    chk('CG con combustible mínimo', cgLim, zf.cg, 'm', 3, K.fwd, K.aft),
+    chk('CG sin combustible útil', cgLim, zf.cg, 'm', 3, K.fwd, K.aft),
     chk('Equipaje', 'máx. ' + K.bagMax + ' kg', v.bag, 'kg', 0, 0, K.bagMax),
     chk('Combustible al despegue', 'máx. ' + ac.cap + ' l', v.fuel, 'l', 0, 0, ac.cap),
-    chk('Combustible a consumir', 'máx. ' + usable + ' l (utilizable)', v.burn, 'l', 0, 0, usable),
+    chk('Combustible a consumir', 'máx. ' + v.fuel + ' l (lo cargado)', v.burn, 'l', 0, 0, v.fuel),
   ];
   return { to, ld, zf, checks, margin: ac.mtow - toW, ok: checks.every(c => c.ok) };
 }
@@ -293,7 +305,8 @@ if (typeof document !== 'undefined') (function () {
 
   const fleet = load('a22ls-fleet', { list: [], sel: '' });
   if (!Array.isArray(fleet.list)) fleet.list = [];
-  let v = load('a22ls-flight', { pilot: 90, pax: 90, bag: 20, fuel: 90, burn: 40 });
+  let v = load('a22ls-flight', { pilot: 90, pax: 90, bag: 20, fuel: 90, burn: 40, dens: K.dens });
+  v.dens = Math.min(Math.max(Math.round((Number(v.dens) || K.dens) * 100) / 100, K.densMin), K.densMax);
   const allAc = () => fleet.list.slice().sort((a, b) => a.reg.localeCompare(b.reg)).concat([EXAMPLE]);
   const current = () => allAc().find(a => a.reg === fleet.sel) || allAc()[0];
   let ac = current();
@@ -390,7 +403,7 @@ if (typeof document !== 'undefined') (function () {
     { key: 'pax', label: 'Pasajero', unit: 'kg', max: () => 150, lim: () => '0 si vuela solo' },
     { key: 'bag', label: 'Equipaje', unit: 'kg', max: () => 40, lim: () => 'máx. ' + K.bagMax + ' kg' },
     { key: 'fuel', label: 'Combust.', unit: 'litros', max: () => ac.cap, lim: () => 'máx. ' + ac.cap + ' l' },
-    { key: 'burn', label: 'Consumo', unit: 'litros', max: () => ac.cap, lim: () => 'máx. ' + Math.max(0, v.fuel - K.unusable) + ' l útil' },
+    { key: 'burn', label: 'Consumo', unit: 'litros', max: () => ac.cap, lim: () => 'máx. ' + v.fuel + ' l' },
   ];
   function buildWheel(d) {
     const col = document.createElement('div'); col.className = 'wcol';
@@ -431,6 +444,8 @@ if (typeof document !== 'undefined') (function () {
   // ---------------- resultados
   function render() {
     const r = calc(ac, v);
+    $('dens-val').textContent = fmt(v.dens, 2) + ' kg/l';
+    $('dens-dn').disabled = v.dens <= K.densMin; $('dens-up').disabled = v.dens >= K.densMax;
     $('verdict').classList.toggle('bad', !r.ok);
     $('vreg').textContent = ac.reg;
     $('vstate').innerHTML = r.ok ? 'DENTRO DE LÍMITES' : 'FUERA DE LÍMITES<small>NO DESPEGAR</small>';
@@ -472,6 +487,10 @@ if (typeof document !== 'undefined') (function () {
     s += '<circle cx="' + sx(r.to.cg) + '" cy="' + sy(r.to.w) + '" r="5.5" fill="var(--bad)"/>';
     $('chart').innerHTML = s;
   }
+
+  function stepDens(d) { v.dens = Math.min(Math.max(Math.round((v.dens + d) * 100) / 100, K.densMin), K.densMax); save('a22ls-flight', v); render(); }
+  $('dens-dn').addEventListener('click', () => stepDens(-0.01));
+  $('dens-up').addEventListener('click', () => stepDens(0.01));
 
   defs.forEach(buildWheel);
   renderAcList();
