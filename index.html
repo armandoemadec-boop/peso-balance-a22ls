@@ -254,8 +254,9 @@ function calc(ac, v) {
   const to = cond('Despegue', toW, toM), ld = cond('Aterrizaje', ldW, ldM), zf = cond('Sin combustible', zfW, zfM);
   const chk = (what, lim, val, unit, dec, min, max) => ({ what, lim, val, unit, dec, ok: val >= min && val <= max });
   const cgLim = 'entre 1,47 y 1,78 m';
+  const es = n => String(n).replace('.', ',');
   const checks = [
-    chk('Peso al despegue', 'máx. ' + ac.mtow + ' kg', toW, 'kg', 1, 0, ac.mtow),
+    chk('Peso al despegue', 'máx. ' + es(ac.mtow) + ' kg', toW, 'kg', 1, 0, ac.mtow),
     chk('CG al despegue', cgLim, to.cg, 'm', 3, K.fwd, K.aft),
     chk('CG al aterrizaje', cgLim, ld.cg, 'm', 3, K.fwd, K.aft),
     chk('CG sin combustible', cgLim, zf.cg, 'm', 3, K.fwd, K.aft),
@@ -304,7 +305,7 @@ if (typeof document !== 'undefined') (function () {
     sel.value = ac.reg;
     $('ac-edit').disabled = !!ac.example;
     $('ac-example').hidden = !ac.example;
-    $('ac-info').textContent = 'Peso vacío ' + fmt(ac.we, 1) + ' kg · CG vacío ' + fmt(ac.xe, 3) + ' m · ' + ac.cap + ' l · MTOW ' + ac.mtow + ' kg' +
+    $('ac-info').textContent = 'Peso vacío ' + fmt(ac.we, 1) + ' kg · CG vacío ' + fmt(ac.xe, 3) + ' m · ' + ac.cap + ' l · MTOW ' + toField(ac.mtow) + ' kg' +
       (ac.date ? ' · pesaje ' + ac.date.split('-').reverse().join('-') : '');
   }
   function selectAc(reg) {
