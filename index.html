@@ -14,51 +14,79 @@
 <meta name="theme-color" content="#e9eef2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0e151b" media="(prefers-color-scheme: dark)">
 <style>
-/* Layout: una columna tipo tarjeta de vuelo; veredicto fijo arriba, ruedas, luego resultados y gráfico. */
+/* Layout: una columna tipo tarjeta de vuelo; avión seleccionado y veredicto arriba, ruedas, luego resultados y gráfico. */
 :root {
   --bg: #e9eef2; --surface: #ffffff; --ink: #13212d; --muted: #586a79; --line: #cdd6de;
-  --accent: #0b5cab; --band: #e3edf7;
-  --ok: #17703f; --ok-bg: #dcf2e4; --bad: #b3261e; --bad-bg: #fbe0dd;
-  --display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
-  --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --accent: #0b5cab; --accent-ink: #ffffff; --band: #e3edf7;
+  --ok: #17703f; --ok-bg: #dcf2e4; --bad: #b3261e; --bad-bg: #fbe0dd; --warn-bg: #fff4d6; --warn: #7a5300;
+  --display: "Barlow Semi Condensed", "Arial Narrow", "Avenir Next Condensed", system-ui, sans-serif;
+  --body: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
   --item: 38px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0e151b; --surface: #17212a; --ink: #e7eef4; --muted: #94a5b3; --line: #2a3843;
-    --accent: #6fb4f3; --band: #1f3042;
-    --ok: #63d394; --ok-bg: #11341f; --bad: #ff8d83; --bad-bg: #451a1a;
+    --accent: #6fb4f3; --accent-ink: #0e151b; --band: #1f3042;
+    --ok: #63d394; --ok-bg: #11341f; --bad: #ff8d83; --bad-bg: #451a1a; --warn-bg: #3a2d0b; --warn: #f3cf72;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0e151b; --surface: #17212a; --ink: #e7eef4; --muted: #94a5b3; --line: #2a3843;
-  --accent: #6fb4f3; --band: #1f3042;
-  --ok: #63d394; --ok-bg: #11341f; --bad: #ff8d83; --bad-bg: #451a1a;
+  --accent: #6fb4f3; --accent-ink: #0e151b; --band: #1f3042;
+  --ok: #63d394; --ok-bg: #11341f; --bad: #ff8d83; --bad-bg: #451a1a; --warn-bg: #3a2d0b; --warn: #f3cf72;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
 :root { padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
 html { -webkit-text-size-adjust: 100%; }
 [hidden] { display: none !important; }
-body { margin: 0; }
-body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.4; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.4; }
 .wrap { max-width: 460px; margin: 0 auto; padding-inline: 16px; padding-block: 14px 32px; display: flex; flex-direction: column; gap: 14px; }
 h1 { font-family: var(--display); font-weight: 700; font-size: 24px; margin: 0; letter-spacing: .01em; text-wrap: balance; }
 .sub { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
 h2 { font-family: var(--display); font-weight: 600; font-size: 13px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
 .num { font-family: var(--display); font-variant-numeric: tabular-nums; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+
+/* avión */
+.acrow { display: flex; gap: 8px; align-items: center; }
+.acrow select { flex: 1; min-width: 0; font: 700 20px var(--display); letter-spacing: .04em; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.acinfo { margin: 8px 0 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.note { margin: 8px 0 0; font-size: 13px; padding: 8px 10px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); }
+button { font: 600 14px var(--body); color: var(--accent); background: transparent; border: 1px solid var(--accent); border-radius: 8px; padding: 8px 12px; cursor: pointer; white-space: nowrap; }
+button.primary { background: var(--accent); color: var(--accent-ink); }
+button.danger { color: var(--bad); border-color: var(--bad); }
+button.danger.primary { background: var(--bad); color: var(--surface); }
+button:disabled { opacity: .4; cursor: default; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* editor */
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.fields label { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--muted); min-width: 0; }
+.fields label.full { grid-column: 1 / -1; }
+.fields input { font: 600 17px var(--display); font-variant-numeric: tabular-nums; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0; }
+.fields input.reg { font-size: 22px; letter-spacing: .08em; text-transform: uppercase; }
+.fields small { font-size: 11.5px; color: var(--muted); }
+.fields input[aria-invalid="true"] { border-color: var(--bad); }
+.err { margin: 10px 0 0; color: var(--bad); font-size: 13.5px; font-weight: 600; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+details.weigh { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+details summary { cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--accent); }
+details .fields { margin-top: 10px; }
+.confirm { margin-top: 12px; padding: 10px; border-radius: 8px; background: var(--bad-bg); color: var(--bad); font-size: 14px; font-weight: 600; }
 
 /* veredicto */
 .verdict { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; border-radius: 12px; padding: 10px 14px;
   display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1.5px solid var(--ok); background: var(--ok-bg); color: var(--ok); }
 .verdict.bad { border-color: var(--bad); background: var(--bad-bg); color: var(--bad); }
+.verdict .reg { display: block; font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: .1em; color: var(--ink); }
 .verdict .state { font-family: var(--display); font-weight: 700; font-size: 19px; line-height: 1.1; letter-spacing: .02em; }
 .verdict .state small { display: block; font-size: 12px; font-weight: 600; letter-spacing: .06em; }
 .verdict .figs { text-align: right; font-family: var(--display); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 17px; line-height: 1.2; white-space: nowrap; color: var(--ink); }
 .verdict .figs span { color: var(--muted); font-size: 12px; font-weight: 500; }
-
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
 
 /* ruedas */
 .wheels { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
@@ -104,31 +132,69 @@ svg text { font-family: var(--display); font-size: 11px; fill: var(--muted); }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); margin-top: 6px; }
 .legend i { display: inline-block; width: 9px; height: 9px; margin-right: 5px; }
 
-/* datos del avión */
-details summary { cursor: pointer; font-family: var(--display); font-weight: 600; font-size: 13px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
-details summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
-.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 12px; }
-.fields label { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--muted); }
-.fields input { font: 600 17px var(--display); font-variant-numeric: tabular-nums; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; }
-.fields input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-button { font: 600 14px var(--body); color: var(--accent); background: transparent; border: 1px solid var(--accent); border-radius: 8px; padding: 8px 12px; margin-top: 12px; cursor: pointer; }
-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.fixed { margin: 12px 0 0; font-size: 12.5px; color: var(--muted); }
-.warn { font-size: 12.5px; color: var(--muted); margin: 0; }
+.fixed, .warn { font-size: 12.5px; color: var(--muted); margin: 0; }
 .warn b { color: var(--ink); }
 @media (prefers-reduced-motion: reduce) { .wheel { scroll-behavior: auto; } }
 </style>
 </head>
 <body>
-
 <div class="wrap">
   <header>
     <h1>Peso y Balance A-22LS</h1>
     <p class="sub">Aeroprakt A-22LS · método de momentos del POH, sección 7 · datum: brida del motor</p>
   </header>
 
+  <section class="panel" aria-label="Avión">
+    <h2>Avión</h2>
+    <div class="acrow">
+      <select id="ac-sel" aria-label="Matrícula del avión"></select>
+      <button type="button" id="ac-edit">Editar</button>
+      <button type="button" id="ac-new" class="primary">Nuevo</button>
+    </div>
+    <p class="acinfo" id="ac-info"></p>
+    <p class="note" id="ac-example" hidden>Está usando el avión de ejemplo del POH. Toque <b>Nuevo</b> para agregar su avión con la matrícula y su pesaje.</p>
+  </section>
+
+  <section class="panel" id="editor" hidden aria-labelledby="ed-title">
+    <h2 id="ed-title">Nuevo avión</h2>
+    <form id="ed-form" novalidate>
+      <div class="fields">
+        <label for="e-reg" class="full">Matrícula
+          <input id="e-reg" class="reg" type="text" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CCABC">
+          <small>5 a 6 caracteres, solo letras y números (sin guion ni espacios)</small>
+        </label>
+        <label for="e-we">Peso vacío (kg)<input id="e-we" type="number" inputmode="decimal" step="0.1"></label>
+        <label for="e-xe">CG vacío (m)<input id="e-xe" type="number" inputmode="decimal" step="0.001"></label>
+        <label for="e-cap">Capacidad combustible (l)<input id="e-cap" type="number" inputmode="numeric" step="1"><small>90 o 114 l según versión</small></label>
+        <label for="e-mtow">MTOW (kg)<input id="e-mtow" type="number" inputmode="numeric" step="1"><small>Máx. 600 kg; menor si así está certificado</small></label>
+        <label for="e-date" class="full">Fecha del pesaje<input id="e-date" type="date"></label>
+      </div>
+      <details class="weigh">
+        <summary>Calcular peso y CG vacío desde el pesaje por ruedas</summary>
+        <div class="fields">
+          <label for="p-nose">Rueda delantera (kg)<input id="p-nose" type="number" inputmode="decimal" step="0.1"></label>
+          <label for="p-anose">Brazo delantera (m)<input id="p-anose" type="number" inputmode="decimal" step="0.001"></label>
+          <label for="p-left">Rueda izquierda (kg)<input id="p-left" type="number" inputmode="decimal" step="0.1"></label>
+          <label for="p-right">Rueda derecha (kg)<input id="p-right" type="number" inputmode="decimal" step="0.1"></label>
+          <label for="p-amain" class="full">Brazo ruedas principales (m)<input id="p-amain" type="number" inputmode="decimal" step="0.001"></label>
+        </div>
+        <div class="btns"><button type="button" id="p-calc">Usar estos valores</button></div>
+      </details>
+      <p class="err" id="ed-err" role="alert" hidden></p>
+      <div class="btns">
+        <button type="submit" class="primary">Guardar avión</button>
+        <button type="button" id="ed-cancel">Cancelar</button>
+        <button type="button" id="ed-del" class="danger">Eliminar</button>
+      </div>
+      <div class="confirm" id="del-confirm" hidden>
+        <div id="del-text"></div>
+        <div class="btns"><button type="button" id="del-yes" class="danger primary">Sí, eliminar</button><button type="button" id="del-no">No</button></div>
+      </div>
+    </form>
+  </section>
+
   <div class="verdict" id="verdict" role="status" aria-live="polite">
-    <div class="state" id="vstate"></div>
+    <div class="state"><span class="reg" id="vreg"></span><span id="vstate"></span></div>
     <div class="figs"><div id="vtow"></div><div id="vcg"></div></div>
   </div>
 
@@ -161,26 +227,15 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     <div class="margin"><span>Margen de peso al despegue</span><span class="num" id="margin"></span></div>
   </section>
 
-  <section class="panel">
-    <details id="acdetails">
-      <summary>Datos del avión</summary>
-      <div class="fields">
-        <label for="f-we">Peso vacío (kg)<input id="f-we" type="number" inputmode="decimal" step="0.1" min="0"></label>
-        <label for="f-xe">CG vacío (m)<input id="f-xe" type="number" inputmode="decimal" step="0.001" min="0"></label>
-        <label for="f-cap">Capacidad combustible (l)<input id="f-cap" type="number" inputmode="numeric" step="1" min="1" max="200"></label>
-      </div>
-      <button type="button" id="reset">Restaurar valores del POH</button>
-      <p class="fixed">Valores fijos del POH: MTOW 600 kg · CG 1,47 a 1,78 m (19 a 37 % MAC) · equipaje máx. 20 kg · brazos: tripulación 1,60 m, equipaje 2,30 m, combustible 2,00 m · combustible 0,75 kg/l.</p>
-    </details>
-  </section>
-
-  <p class="warn"><b>Importante:</b> el peso y CG vacío precargados (318,1 kg / 1,512 m) son los del avión de ejemplo del POH. Cargue en "Datos del avión" el pesaje vigente de su avión. Esta página es una ayuda de cálculo y no reemplaza al POH ni la responsabilidad del piloto al mando.</p>
+  <p class="fixed">Valores fijos del modelo A-22LS (POH): CG 1,47 a 1,78 m (19 a 37 % MAC) · equipaje máx. 20 kg · brazos: tripulación 1,60 m, equipaje 2,30 m, combustible 2,00 m · combustible 0,75 kg/l.</p>
+  <p class="warn"><b>Importante:</b> los aviones se guardan solo en este teléfono. Use el pesaje vigente de cada matrícula. Esta app es una ayuda de cálculo y no reemplaza al POH ni la responsabilidad del piloto al mando.</p>
 </div>
 
 <script>
-const K = { mtow: 600, fwd: 1.47, aft: 1.78, macFwd: 19, macAft: 37, armCrew: 1.60, armBag: 2.30, armFuel: 2.00, dens: 0.75, bagMax: 20 };
-const POH = { we: 318.1, xe: 1.512, cap: 90 };
+const K = { mtowMax: 600, fwd: 1.47, aft: 1.78, macFwd: 19, macAft: 37, armCrew: 1.60, armBag: 2.30, armFuel: 2.00, dens: 0.75, bagMax: 20, noseArm: 0.532, mainArm: 1.794 };
 const MAC = (K.aft - K.fwd) / ((K.macAft - K.macFwd) / 100), LEMAC = K.fwd - K.macFwd / 100 * MAC;
+const EXAMPLE = { reg: 'Ejemplo POH', we: 318.1, xe: 1.512, cap: 90, mtow: 600, date: '', example: true };
+const REG_RE = /^[A-Z0-9]{5,6}$/;
 const ITEM = 38;
 
 function calc(ac, v) {
@@ -189,12 +244,12 @@ function calc(ac, v) {
   const zfM = ac.we * ac.xe + (v.pilot + v.pax) * K.armCrew + v.bag * K.armBag;
   const toW = zfW + v.fuel * K.dens, toM = zfM + v.fuel * K.dens * K.armFuel;
   const ldW = toW - v.burn * K.dens, ldM = toM - v.burn * K.dens * K.armFuel;
-  const cond = (name, w, m) => { const cg = w > 0 ? m / w : 0; return { name, w, cg, pct: pct(cg), ok: w <= K.mtow && cg >= K.fwd && cg <= K.aft }; };
+  const cond = (name, w, m) => { const cg = w > 0 ? m / w : 0; return { name, w, cg, pct: pct(cg), ok: w <= ac.mtow && cg >= K.fwd && cg <= K.aft }; };
   const to = cond('Despegue', toW, toM), ld = cond('Aterrizaje', ldW, ldM), zf = cond('Sin combustible', zfW, zfM);
   const chk = (what, lim, val, unit, dec, min, max) => ({ what, lim, val, unit, dec, ok: val >= min && val <= max });
   const cgLim = 'entre 1,47 y 1,78 m';
   const checks = [
-    chk('Peso al despegue', 'máx. ' + K.mtow + ' kg', toW, 'kg', 1, 0, K.mtow),
+    chk('Peso al despegue', 'máx. ' + ac.mtow + ' kg', toW, 'kg', 1, 0, ac.mtow),
     chk('CG al despegue', cgLim, to.cg, 'm', 3, K.fwd, K.aft),
     chk('CG al aterrizaje', cgLim, ld.cg, 'm', 3, K.fwd, K.aft),
     chk('CG sin combustible', cgLim, zf.cg, 'm', 3, K.fwd, K.aft),
@@ -202,7 +257,22 @@ function calc(ac, v) {
     chk('Combustible al despegue', 'máx. ' + ac.cap + ' l', v.fuel, 'l', 0, 0, ac.cap),
     chk('Combustible a consumir', 'máx. ' + v.fuel + ' l (lo cargado)', v.burn, 'l', 0, 0, v.fuel),
   ];
-  return { to, ld, zf, checks, margin: K.mtow - toW, ok: checks.every(c => c.ok) };
+  return { to, ld, zf, checks, margin: ac.mtow - toW, ok: checks.every(c => c.ok) };
+}
+
+// Valida los datos de un avión. Devuelve { ac } o { error, field }.
+function validateAircraft(f, list, editingReg) {
+  const reg = String(f.reg || '').trim().toUpperCase();
+  if (!REG_RE.test(reg)) return { field: 'reg', error: 'La matrícula debe tener 5 a 6 caracteres, solo letras y números (sin guion ni espacios).' };
+  if (reg !== editingReg && list.some(a => a.reg === reg)) return { field: 'reg', error: 'Ya existe un avión con la matrícula ' + reg + '.' };
+  const n = x => (x === '' || x == null) ? NaN : Number(x);
+  const we = n(f.we), xe = n(f.xe), cap = n(f.cap), mtow = n(f.mtow);
+  if (!(we >= 200 && we <= 500)) return { field: 'we', error: 'El peso vacío debe estar entre 200 y 500 kg. Revise la hoja de pesaje.' };
+  if (!(xe >= 1.30 && xe <= 1.90)) return { field: 'xe', error: 'El CG vacío debe estar entre 1,30 y 1,90 m desde la brida del motor. Revise la hoja de pesaje.' };
+  if (!(cap >= 1 && cap <= 150 && Number.isInteger(cap))) return { field: 'cap', error: 'La capacidad de combustible debe ser un número entero entre 1 y 150 litros.' };
+  if (!(mtow >= 400 && mtow <= K.mtowMax)) return { field: 'mtow', error: 'El MTOW debe estar entre 400 y 600 kg (600 kg es el máximo del A-22LS).' };
+  if (we >= mtow) return { field: 'we', error: 'El peso vacío debe ser menor que el MTOW.' };
+  return { ac: { reg, we, xe, cap, mtow, date: f.date || '' } };
 }
 
 if (typeof document !== 'undefined') (function () {
@@ -210,10 +280,95 @@ if (typeof document !== 'undefined') (function () {
   const fmt = (n, d) => n.toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d });
   const load = (k, def) => { try { return Object.assign({}, def, JSON.parse(localStorage.getItem(k) || '{}')); } catch (e) { return Object.assign({}, def); } };
   const save = (k, o) => { try { localStorage.setItem(k, JSON.stringify(o)); } catch (e) {} };
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
 
-  let ac = load('a22ls-ac', POH);
+  const fleet = load('a22ls-fleet', { list: [], sel: '' });
+  if (!Array.isArray(fleet.list)) fleet.list = [];
   let v = load('a22ls-flight', { pilot: 90, pax: 90, bag: 20, fuel: 90, burn: 40 });
+  const allAc = () => fleet.list.slice().sort((a, b) => a.reg.localeCompare(b.reg)).concat([EXAMPLE]);
+  const current = () => allAc().find(a => a.reg === fleet.sel) || allAc()[0];
+  let ac = current();
+  const wheels = {};
 
+  // ---------------- selector de avión
+  function renderAcList() {
+    const sel = $('ac-sel');
+    sel.innerHTML = '';
+    for (const a of allAc()) { const o = document.createElement('option'); o.value = a.reg; o.textContent = a.reg; sel.appendChild(o); }
+    sel.value = ac.reg;
+    $('ac-edit').disabled = !!ac.example;
+    $('ac-example').hidden = !ac.example;
+    $('ac-info').textContent = 'Peso vacío ' + fmt(ac.we, 1) + ' kg · CG vacío ' + fmt(ac.xe, 3) + ' m · ' + ac.cap + ' l · MTOW ' + ac.mtow + ' kg' +
+      (ac.date ? ' · pesaje ' + ac.date.split('-').reverse().join('-') : '');
+  }
+  function selectAc(reg) {
+    fleet.sel = reg; save('a22ls-fleet', fleet);
+    ac = current();
+    renderAcList();
+    if (wheels.fuel) { fillWheel(wheels.fuel); fillWheel(wheels.burn); save('a22ls-flight', v); }
+    render();
+  }
+  $('ac-sel').addEventListener('change', e => { closeEditor(); selectAc(e.target.value); });
+
+  // ---------------- editor
+  let editing = null; // null = nuevo; matrícula = edición
+  const F = { reg: 'e-reg', we: 'e-we', xe: 'e-xe', cap: 'e-cap', mtow: 'e-mtow', date: 'e-date' };
+  function openEditor(a) {
+    editing = a ? a.reg : null;
+    $('ed-title').textContent = a ? 'Editar ' + a.reg : 'Nuevo avión';
+    $('e-reg').value = a ? a.reg : '';
+    $('e-we').value = a ? a.we : '';
+    $('e-xe').value = a ? a.xe : '';
+    $('e-cap').value = a ? a.cap : 90;
+    $('e-mtow').value = a ? a.mtow : 600;
+    $('e-date').value = a ? a.date : '';
+    $('p-anose').value = K.noseArm; $('p-amain').value = K.mainArm;
+    ['p-nose', 'p-left', 'p-right'].forEach(id => $(id).value = '');
+    $('ed-del').hidden = !a;
+    $('del-confirm').hidden = true;
+    showError(null);
+    $('editor').hidden = false;
+    $('editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $(a ? 'e-we' : 'e-reg').focus({ preventScroll: true });
+  }
+  function closeEditor() { $('editor').hidden = true; editing = null; }
+  function showError(res) {
+    for (const k in F) $(F[k]).removeAttribute('aria-invalid');
+    $('ed-err').hidden = !res;
+    if (res) { $('ed-err').textContent = res.error; if (res.field) { $(F[res.field]).setAttribute('aria-invalid', 'true'); $(F[res.field]).focus(); } }
+  }
+  $('e-reg').addEventListener('input', e => { const p = e.target.selectionStart; e.target.value = e.target.value.toUpperCase(); e.target.setSelectionRange(p, p); });
+  $('ac-new').addEventListener('click', () => openEditor(null));
+  $('ac-edit').addEventListener('click', () => { if (!ac.example) openEditor(ac); });
+  $('ed-cancel').addEventListener('click', closeEditor);
+  $('ed-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const f = {}; for (const k in F) f[k] = $(F[k]).value;
+    const res = validateAircraft(f, fleet.list, editing);
+    if (res.error) { showError(res); return; }
+    if (editing) fleet.list = fleet.list.filter(a => a.reg !== editing);
+    fleet.list.push(res.ac);
+    closeEditor();
+    selectAc(res.ac.reg);
+  });
+  $('p-calc').addEventListener('click', () => {
+    const g = id => parseFloat($(id).value);
+    const n = g('p-nose'), l = g('p-left'), r = g('p-right'), an = g('p-anose'), am = g('p-amain');
+    if (![n, l, r, an, am].every(x => x > 0)) { showError({ error: 'Complete los tres pesos de ruedas y los dos brazos con valores mayores que 0.' }); return; }
+    const w = n + l + r;
+    $('e-we').value = w.toFixed(1);
+    $('e-xe').value = ((n * an + (l + r) * am) / w).toFixed(3);
+    showError(null);
+  });
+  $('ed-del').addEventListener('click', () => { $('del-text').textContent = '¿Eliminar el avión ' + editing + ' de este teléfono?'; $('del-confirm').hidden = false; });
+  $('del-no').addEventListener('click', () => { $('del-confirm').hidden = true; });
+  $('del-yes').addEventListener('click', () => {
+    fleet.list = fleet.list.filter(a => a.reg !== editing);
+    closeEditor();
+    selectAc(allAc()[0].reg);
+  });
+
+  // ---------------- ruedas
   const defs = [
     { key: 'pilot', label: 'Piloto', unit: 'kg', max: () => 150, lim: () => 'sin límite individual' },
     { key: 'pax', label: 'Pasajero', unit: 'kg', max: () => 150, lim: () => '0 si vuela solo' },
@@ -221,8 +376,6 @@ if (typeof document !== 'undefined') (function () {
     { key: 'fuel', label: 'Combust.', unit: 'litros', max: () => ac.cap, lim: () => 'máx. ' + ac.cap + ' l' },
     { key: 'burn', label: 'Consumo', unit: 'litros', max: () => ac.cap, lim: () => 'máx. ' + v.fuel + ' l' },
   ];
-  const wheels = {};
-
   function buildWheel(d) {
     const col = document.createElement('div'); col.className = 'wcol';
     col.innerHTML = '<label id="l-' + d.key + '">' + d.label + '</label><div class="wbox"><div class="wheel" id="w-' + d.key +
@@ -259,9 +412,11 @@ if (typeof document !== 'undefined') (function () {
     if (!silent) { save('a22ls-flight', v); render(); }
   }
 
+  // ---------------- resultados
   function render() {
     const r = calc(ac, v);
     $('verdict').classList.toggle('bad', !r.ok);
+    $('vreg').textContent = ac.reg;
     $('vstate').innerHTML = r.ok ? 'DENTRO DE LÍMITES' : 'FUERA DE LÍMITES<small>NO DESPEGAR</small>';
     $('vtow').innerHTML = fmt(r.to.w, 1) + ' <span>kg</span>';
     $('vcg').innerHTML = fmt(r.to.cg, 3) + ' <span>m · ' + fmt(r.to.pct, 1) + ' % MAC</span>';
@@ -290,8 +445,8 @@ if (typeof document !== 'undefined') (function () {
       s += '<line x1="' + L + '" x2="' + R + '" y1="' + sy(y) + '" y2="' + sy(y) + '" stroke="var(--line)" stroke-width="0.6"/>';
       if (y % 100 === 0) s += '<text x="' + (L - 5) + '" y="' + (sy(y) + 4) + '" text-anchor="end">' + y + '</text>';
     }
-    const yb = sy(Math.min(ac.we, K.mtow));
-    s += '<rect x="' + sx(K.fwd) + '" y="' + sy(K.mtow) + '" width="' + (sx(K.aft) - sx(K.fwd)) + '" height="' + (yb - sy(K.mtow)) +
+    const yb = sy(Math.min(ac.we, ac.mtow));
+    s += '<rect x="' + sx(K.fwd) + '" y="' + sy(ac.mtow) + '" width="' + (sx(K.aft) - sx(K.fwd)) + '" height="' + (yb - sy(ac.mtow)) +
       '" fill="var(--band)" stroke="var(--accent)" stroke-width="2"/>';
     s += '<text x="' + ((L + R) / 2) + '" y="226" text-anchor="middle">CG desde el datum (m) · peso (kg)</text>';
     const zx = sx(r.zf.cg), zy = sy(r.zf.w), lx = sx(r.ld.cg), ly = sy(r.ld.w);
@@ -302,24 +457,12 @@ if (typeof document !== 'undefined') (function () {
     $('chart').innerHTML = s;
   }
 
-  function syncFields() { $('f-we').value = ac.we; $('f-xe').value = ac.xe; $('f-cap').value = ac.cap; }
-  function onField() {
-    const we = parseFloat($('f-we').value), xe = parseFloat($('f-xe').value), cap = Math.round(parseFloat($('f-cap').value));
-    if (we > 0) ac.we = we;
-    if (xe > 0) ac.xe = xe;
-    if (cap >= 1 && cap <= 200 && cap !== ac.cap) { ac.cap = cap; fillWheel(wheels.fuel); fillWheel(wheels.burn); save('a22ls-flight', v); }
-    save('a22ls-ac', ac); render();
-  }
-  ['f-we', 'f-xe', 'f-cap'].forEach(id => $(id).addEventListener('change', onField));
-  $('reset').addEventListener('click', () => { ac = Object.assign({}, POH); syncFields(); fillWheel(wheels.fuel); fillWheel(wheels.burn); save('a22ls-ac', ac); render(); });
-
   defs.forEach(buildWheel);
-  syncFields();
+  renderAcList();
   render();
   // el scroll inicial puede aplicarse antes de que el diseño esté listo: reposicionar una vez cargada la página
   window.addEventListener('load', () => { for (const k in wheels) wheels[k].el.scrollTop = v[k] * ITEM; });
 })();
-
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 </script>
 </body>
