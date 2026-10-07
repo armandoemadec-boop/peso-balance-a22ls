@@ -245,7 +245,7 @@ svg text { font-family: var(--display); font-size: 11px; fill: var(--muted); }
     <div class="margin"><span>Margen de peso al despegue</span><span class="num" id="margin"></span></div>
   </section>
 
-  <p class="fixed">Valores fijos del modelo A-22LS (POH): CG 1,47 a 1,78 m (19 a 37 % MAC) · equipaje máx. 20 kg · brazos: tripulación 1,60 m, equipaje 2,30 m, combustible 2,00 m · combustible no utilizable 1 l (0,5 l por estanque), cuyo peso se mantiene a bordo en la condición sin combustible útil.</p>
+  <p class="fixed">Valores fijos del modelo A-22LS (POH): CG 1,47 a 1,78 m (19 a 37 % MAC) · equipaje máx. 20 kg · brazos: tripulación 1,60 m, equipaje 2,30 m, combustible 2,00 m · combustible no utilizable 1 l (0,5 l por estanque), que no se puede consumir y cuyo peso se mantiene a bordo.</p>
   <p class="warn"><b>Importante:</b> los aviones se guardan solo en este teléfono. Use el pesaje vigente de cada matrícula. Esta app es una ayuda de cálculo y no reemplaza al POH ni la responsabilidad del piloto al mando.</p>
 </div>
 
@@ -283,7 +283,7 @@ function calc(ac, v) {
     chk('CG sin combustible útil', cgLim, zf.cg, 'm', 3, K.fwd, K.aft),
     chk('Equipaje', 'máx. ' + K.bagMax + ' kg', v.bag, 'kg', 0, 0, K.bagMax),
     chk('Combustible al despegue', 'máx. ' + ac.cap + ' l', v.fuel, 'l', 0, 0, ac.cap),
-    chk('Combustible a consumir', 'máx. ' + v.fuel + ' l (lo cargado)', v.burn, 'l', 0, 0, v.fuel),
+    chk('Combustible a consumir', 'máx. ' + usable + ' l (utilizable)', v.burn, 'l', 0, 0, usable),
   ];
   return { to, ld, zf, checks, margin: ac.mtow - toW, ok: checks.every(c => c.ok) };
 }
@@ -410,7 +410,7 @@ if (typeof document !== 'undefined') (function () {
     { key: 'pax', label: 'Pasajero', unit: 'kg', max: () => 150, lim: () => '0 si vuela solo' },
     { key: 'bag', label: 'Equipaje', unit: 'kg', max: () => 40, lim: () => 'máx. ' + K.bagMax + ' kg' },
     { key: 'fuel', label: 'Combust.', unit: 'litros', max: () => ac.cap, lim: () => 'máx. ' + ac.cap + ' l' },
-    { key: 'burn', label: 'Consumo', unit: 'litros', max: () => ac.cap, lim: () => 'máx. ' + v.fuel + ' l' },
+    { key: 'burn', label: 'Consumo', unit: 'litros', max: () => ac.cap, lim: () => 'máx. ' + Math.max(0, v.fuel - K.unusable) + ' l' },
   ];
   function buildWheel(d) {
     const col = document.createElement('div'); col.className = 'wcol';
