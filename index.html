@@ -206,8 +206,15 @@ svg text { font-family: var(--display); font-size: 11px; fill: var(--muted); }
     <h2>Aviones · cambiar, editar o agregar</h2>
     <div class="acrow">
       <select id="ac-sel" aria-label="Matrícula del avión"></select>
-      <button type="button" id="ac-edit">Editar</button>
+    </div>
+    <div class="btns">
       <button type="button" id="ac-new" class="primary">Nuevo</button>
+      <button type="button" id="ac-edit">Editar</button>
+      <button type="button" id="ac-del" class="danger">Eliminar</button>
+    </div>
+    <div class="confirm" id="ac-del-confirm" hidden>
+      <div id="ac-del-text"></div>
+      <div class="btns"><button type="button" id="ac-del-yes" class="danger primary">Sí, eliminar</button><button type="button" id="ac-del-no">No</button></div>
     </div>
   </section>
 
@@ -331,6 +338,8 @@ if (typeof document !== 'undefined') (function () {
     sel.value = ac.reg;
     $('hreg').textContent = ac.reg;
     $('ac-edit').disabled = !!ac.example;
+    $('ac-del').disabled = !!ac.example;
+    $('ac-del-confirm').hidden = true;
     $('ac-example').hidden = !ac.example;
     $('ac-info').textContent = 'Peso vacío ' + fmt(ac.we, 1) + ' kg · CG vacío ' + fmt(ac.xe, 3) + ' m · ' + ac.cap + ' l · MTOW ' + toField(ac.mtow) + ' kg' +
       (ac.date ? ' · pesaje ' + ac.date.split('-').reverse().join('-') : '');
@@ -405,11 +414,22 @@ if (typeof document !== 'undefined') (function () {
   });
   $('ed-del').addEventListener('click', () => { $('del-text').textContent = '¿Eliminar el avión ' + editing + ' de este teléfono?'; $('del-confirm').hidden = false; });
   $('del-no').addEventListener('click', () => { $('del-confirm').hidden = true; });
-  $('del-yes').addEventListener('click', () => {
-    fleet.list = fleet.list.filter(a => a.reg !== editing);
+  function removeAc(reg) {
+    fleet.list = fleet.list.filter(a => a.reg !== reg);
     closeEditor();
     selectAc(allAc()[0].reg);
+  }
+  $('del-yes').addEventListener('click', () => removeAc(editing));
+  // eliminar directamente el avión seleccionado, desde el módulo de aviones
+  $('ac-del').addEventListener('click', () => {
+    if (ac.example) return;
+    closeEditor();
+    $('ac-del-text').textContent = '¿Eliminar el avión ' + ac.reg + ' de este teléfono? Sus datos de pesaje se borrarán.';
+    $('ac-del-confirm').hidden = false;
+    $('ac-del-confirm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
+  $('ac-del-no').addEventListener('click', () => { $('ac-del-confirm').hidden = true; });
+  $('ac-del-yes').addEventListener('click', () => removeAc(ac.reg));
 
   // ---------------- ruedas
   const defs = [
