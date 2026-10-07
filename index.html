@@ -476,7 +476,13 @@ if (typeof document !== 'undefined') (function () {
   // el scroll inicial puede aplicarse antes de que el diseño esté listo: reposicionar una vez cargada la página
   window.addEventListener('load', () => { for (const k in wheels) wheels[k].el.scrollTop = v[k] * ITEM; });
 })();
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+// Cuando llega una versión nueva de la app, recargar una vez para mostrarla de inmediato.
+if ('serviceWorker' in navigator) {
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !reloaded) { reloaded = true; location.reload(); } });
+  navigator.serviceWorker.register('sw.js');
+}
 </script>
 </body>
 </html>
