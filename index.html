@@ -217,7 +217,7 @@ svg text { font-family: var(--display); font-size: 11px; fill: var(--muted); }
     <div class="legend">
       <span><i style="background:var(--bad);border-radius:50%"></i>Despegue</span>
       <span><i style="background:var(--ok)"></i>Aterrizaje</span>
-      <span><i style="background:var(--muted);transform:rotate(45deg)"></i>Sin combustible</span>
+      <span><i style="background:var(--muted);transform:rotate(45deg)"></i>Combustible mínimo</span>
     </div>
   </section>
 
@@ -227,12 +227,12 @@ svg text { font-family: var(--display); font-size: 11px; fill: var(--muted); }
     <div class="margin"><span>Margen de peso al despegue</span><span class="num" id="margin"></span></div>
   </section>
 
-  <p class="fixed">Valores fijos del modelo A-22LS (POH): CG 1,47 a 1,78 m (19 a 37 % MAC) · equipaje máx. 20 kg · brazos: tripulación 1,60 m, equipaje 2,30 m, combustible 2,00 m · combustible 0,75 kg/l.</p>
+  <p class="fixed">Valores fijos del modelo A-22LS (POH): CG 1,47 a 1,78 m (19 a 37 % MAC) · equipaje máx. 20 kg · brazos: tripulación 1,60 m, equipaje 2,30 m, combustible 2,00 m · combustible 0,75 kg/l · combustible no utilizable 1 l (0,5 l por estanque).</p>
   <p class="warn"><b>Importante:</b> los aviones se guardan solo en este teléfono. Use el pesaje vigente de cada matrícula. Esta app es una ayuda de cálculo y no reemplaza al POH ni la responsabilidad del piloto al mando.</p>
 </div>
 
 <script>
-const K = { mtowMax: 600, fwd: 1.47, aft: 1.78, macFwd: 19, macAft: 37, armCrew: 1.60, armBag: 2.30, armFuel: 2.00, dens: 0.75, bagMax: 20, noseArm: 0.532, mainArm: 1.794 };
+const K = { mtowMax: 600, fwd: 1.47, aft: 1.78, macFwd: 19, macAft: 37, armCrew: 1.60, armBag: 2.30, armFuel: 2.00, dens: 0.75, bagMax: 20, unusable: 1 /* 0,5 l por estanque × 2 */, noseArm: 0.532, mainArm: 1.794 };
 const MAC = (K.aft - K.fwd) / ((K.macAft - K.macFwd) / 100), LEMAC = K.fwd - K.macFwd / 100 * MAC;
 const EXAMPLE = { reg: 'Ejemplo POH', we: 318.1, xe: 1.512, cap: 90, mtow: 600, date: '', example: true };
 const REG_RE = /^[A-Z0-9]{5,6}$/;
@@ -251,7 +251,9 @@ function calc(ac, v) {
   const toW = zfW + v.fuel * K.dens, toM = zfM + v.fuel * K.dens * K.armFuel;
   const ldW = toW - v.burn * K.dens, ldM = toM - v.burn * K.dens * K.armFuel;
   const cond = (name, w, m) => { const cg = w > 0 ? m / w : 0; return { name, w, cg, pct: pct(cg), ok: w <= ac.mtow && cg >= K.fwd && cg <= K.aft }; };
-  const to = cond('Despegue', toW, toM), ld = cond('Aterrizaje', ldW, ldM), zf = cond('Sin combustible', zfW, zfM);
+  // El combustible no utilizable queda siempre a bordo: la condición más liviana no es "sin combustible".
+  const rest = Math.min(v.fuel, K.unusable) * K.dens, usable = Math.max(0, v.fuel - K.unusable);
+  const to = cond('Despegue', toW, toM), ld = cond('Aterrizaje', ldW, ldM), zf = cond('Comb. mínimo', zfW + rest, zfM + rest * K.armFuel);
   const chk = (what, lim, val, unit, dec, min, max) => ({ what, lim, val, unit, dec, ok: val >= min && val <= max });
   const cgLim = 'entre 1,47 y 1,78 m';
   const es = n => String(n).replace('.', ',');
@@ -259,10 +261,10 @@ function calc(ac, v) {
     chk('Peso al despegue', 'máx. ' + es(ac.mtow) + ' kg', toW, 'kg', 1, 0, ac.mtow),
     chk('CG al despegue', cgLim, to.cg, 'm', 3, K.fwd, K.aft),
     chk('CG al aterrizaje', cgLim, ld.cg, 'm', 3, K.fwd, K.aft),
-    chk('CG sin combustible', cgLim, zf.cg, 'm', 3, K.fwd, K.aft),
+    chk('CG con combustible mínimo', cgLim, zf.cg, 'm', 3, K.fwd, K.aft),
     chk('Equipaje', 'máx. ' + K.bagMax + ' kg', v.bag, 'kg', 0, 0, K.bagMax),
     chk('Combustible al despegue', 'máx. ' + ac.cap + ' l', v.fuel, 'l', 0, 0, ac.cap),
-    chk('Combustible a consumir', 'máx. ' + v.fuel + ' l (lo cargado)', v.burn, 'l', 0, 0, v.fuel),
+    chk('Combustible a consumir', 'máx. ' + usable + ' l (utilizable)', v.burn, 'l', 0, 0, usable),
   ];
   return { to, ld, zf, checks, margin: ac.mtow - toW, ok: checks.every(c => c.ok) };
 }
@@ -388,7 +390,7 @@ if (typeof document !== 'undefined') (function () {
     { key: 'pax', label: 'Pasajero', unit: 'kg', max: () => 150, lim: () => '0 si vuela solo' },
     { key: 'bag', label: 'Equipaje', unit: 'kg', max: () => 40, lim: () => 'máx. ' + K.bagMax + ' kg' },
     { key: 'fuel', label: 'Combust.', unit: 'litros', max: () => ac.cap, lim: () => 'máx. ' + ac.cap + ' l' },
-    { key: 'burn', label: 'Consumo', unit: 'litros', max: () => ac.cap, lim: () => 'máx. ' + v.fuel + ' l' },
+    { key: 'burn', label: 'Consumo', unit: 'litros', max: () => ac.cap, lim: () => 'máx. ' + Math.max(0, v.fuel - K.unusable) + ' l útil' },
   ];
   function buildWheel(d) {
     const col = document.createElement('div'); col.className = 'wcol';
