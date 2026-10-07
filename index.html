@@ -163,20 +163,20 @@ svg text { font-family: var(--display); font-size: 11px; fill: var(--muted); }
           <input id="e-reg" class="reg" type="text" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CCABC">
           <small>5 a 6 caracteres, solo letras y números (sin guion ni espacios)</small>
         </label>
-        <label for="e-we">Peso vacío (kg)<input id="e-we" type="number" inputmode="decimal" step="0.1"></label>
-        <label for="e-xe">CG vacío (m)<input id="e-xe" type="number" inputmode="decimal" step="0.001"></label>
-        <label for="e-cap">Capacidad combustible (l)<input id="e-cap" type="number" inputmode="numeric" step="1"><small>90 o 114 l según versión</small></label>
-        <label for="e-mtow">MTOW (kg)<input id="e-mtow" type="number" inputmode="numeric" step="1"><small>Máx. 600 kg; menor si así está certificado</small></label>
+        <label for="e-we">Peso vacío (kg)<input id="e-we" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+        <label for="e-xe">CG vacío (m)<input id="e-xe" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+        <label for="e-cap">Capacidad combustible (l)<input id="e-cap" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" class="dec"><small>90 o 114 l según versión</small></label>
+        <label for="e-mtow">MTOW (kg)<input id="e-mtow" type="text" inputmode="decimal" autocomplete="off" class="dec"><small>Máx. 600 kg; menor si así está certificado</small></label>
         <label for="e-date" class="full">Fecha del pesaje<input id="e-date" type="date"></label>
       </div>
       <details class="weigh">
         <summary>Calcular peso y CG vacío desde el pesaje por ruedas</summary>
         <div class="fields">
-          <label for="p-nose">Rueda delantera (kg)<input id="p-nose" type="number" inputmode="decimal" step="0.1"></label>
-          <label for="p-anose">Brazo delantera (m)<input id="p-anose" type="number" inputmode="decimal" step="0.001"></label>
-          <label for="p-left">Rueda izquierda (kg)<input id="p-left" type="number" inputmode="decimal" step="0.1"></label>
-          <label for="p-right">Rueda derecha (kg)<input id="p-right" type="number" inputmode="decimal" step="0.1"></label>
-          <label for="p-amain" class="full">Brazo ruedas principales (m)<input id="p-amain" type="number" inputmode="decimal" step="0.001"></label>
+          <label for="p-nose">Rueda delantera (kg)<input id="p-nose" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+          <label for="p-anose">Brazo delantera (m)<input id="p-anose" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+          <label for="p-left">Rueda izquierda (kg)<input id="p-left" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+          <label for="p-right">Rueda derecha (kg)<input id="p-right" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+          <label for="p-amain" class="full">Brazo ruedas principales (m)<input id="p-amain" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
         </div>
         <div class="btns"><button type="button" id="p-calc">Usar estos valores</button></div>
       </details>
@@ -236,6 +236,12 @@ const K = { mtowMax: 600, fwd: 1.47, aft: 1.78, macFwd: 19, macAft: 37, armCrew:
 const MAC = (K.aft - K.fwd) / ((K.macAft - K.macFwd) / 100), LEMAC = K.fwd - K.macFwd / 100 * MAC;
 const EXAMPLE = { reg: 'Ejemplo POH', we: 318.1, xe: 1.512, cap: 90, mtow: 600, date: '', example: true };
 const REG_RE = /^[A-Z0-9]{5,6}$/;
+// Acepta coma o punto decimal ("318,1" o "318.1"). Devuelve NaN si el texto no es un número.
+function parseNum(x) {
+  if (typeof x === 'number') return x;
+  const t = String(x == null ? '' : x).trim().replace(',', '.');
+  return /^\d+(\.\d+)?$/.test(t) ? Number(t) : NaN;
+}
 const ITEM = 38;
 
 function calc(ac, v) {
@@ -265,8 +271,7 @@ function validateAircraft(f, list, editingReg) {
   const reg = String(f.reg || '').trim().toUpperCase();
   if (!REG_RE.test(reg)) return { field: 'reg', error: 'La matrícula debe tener 5 a 6 caracteres, solo letras y números (sin guion ni espacios).' };
   if (reg !== editingReg && list.some(a => a.reg === reg)) return { field: 'reg', error: 'Ya existe un avión con la matrícula ' + reg + '.' };
-  const n = x => (x === '' || x == null) ? NaN : Number(x);
-  const we = n(f.we), xe = n(f.xe), cap = n(f.cap), mtow = n(f.mtow);
+  const we = parseNum(f.we), xe = parseNum(f.xe), cap = parseNum(f.cap), mtow = parseNum(f.mtow);
   if (!(we >= 200 && we <= 500)) return { field: 'we', error: 'El peso vacío debe estar entre 200 y 500 kg. Revise la hoja de pesaje.' };
   if (!(xe >= 1.30 && xe <= 1.90)) return { field: 'xe', error: 'El CG vacío debe estar entre 1,30 y 1,90 m desde la brida del motor. Revise la hoja de pesaje.' };
   if (!(cap >= 1 && cap <= 150 && Number.isInteger(cap))) return { field: 'cap', error: 'La capacidad de combustible debe ser un número entero entre 1 y 150 litros.' };
@@ -278,6 +283,7 @@ function validateAircraft(f, list, editingReg) {
 if (typeof document !== 'undefined') (function () {
   const $ = id => document.getElementById(id);
   const fmt = (n, d) => n.toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const toField = n => String(n).replace('.', ',');
   const load = (k, def) => { try { return Object.assign({}, def, JSON.parse(localStorage.getItem(k) || '{}')); } catch (e) { return Object.assign({}, def); } };
   const save = (k, o) => { try { localStorage.setItem(k, JSON.stringify(o)); } catch (e) {} };
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
@@ -317,12 +323,12 @@ if (typeof document !== 'undefined') (function () {
     editing = a ? a.reg : null;
     $('ed-title').textContent = a ? 'Editar ' + a.reg : 'Nuevo avión';
     $('e-reg').value = a ? a.reg : '';
-    $('e-we').value = a ? a.we : '';
-    $('e-xe').value = a ? a.xe : '';
+    $('e-we').value = a ? toField(a.we) : '';
+    $('e-xe').value = a ? toField(a.xe) : '';
     $('e-cap').value = a ? a.cap : 90;
-    $('e-mtow').value = a ? a.mtow : 600;
+    $('e-mtow').value = a ? toField(a.mtow) : 600;
     $('e-date').value = a ? a.date : '';
-    $('p-anose').value = K.noseArm; $('p-amain').value = K.mainArm;
+    $('p-anose').value = toField(K.noseArm); $('p-amain').value = toField(K.mainArm);
     ['p-nose', 'p-left', 'p-right'].forEach(id => $(id).value = '');
     $('ed-del').hidden = !a;
     $('del-confirm').hidden = true;
@@ -338,6 +344,13 @@ if (typeof document !== 'undefined') (function () {
     if (res) { $('ed-err').textContent = res.error; if (res.field) { $(F[res.field]).setAttribute('aria-invalid', 'true'); $(F[res.field]).focus(); } }
   }
   $('e-reg').addEventListener('input', e => { const p = e.target.selectionStart; e.target.value = e.target.value.toUpperCase(); e.target.setSelectionRange(p, p); });
+  document.querySelectorAll('input.dec').forEach(el => el.addEventListener('input', () => {
+    let t = el.value.replace(/[^0-9.,]/g, '');
+    const i = t.search(/[.,]/);
+    if (i >= 0) t = t.slice(0, i + 1) + t.slice(i + 1).replace(/[.,]/g, '');
+    if (el.inputMode === 'numeric') t = t.replace(/[.,]/g, '');
+    if (t !== el.value) el.value = t;
+  }));
   $('ac-new').addEventListener('click', () => openEditor(null));
   $('ac-edit').addEventListener('click', () => { if (!ac.example) openEditor(ac); });
   $('ed-cancel').addEventListener('click', closeEditor);
@@ -352,12 +365,12 @@ if (typeof document !== 'undefined') (function () {
     selectAc(res.ac.reg);
   });
   $('p-calc').addEventListener('click', () => {
-    const g = id => parseFloat($(id).value);
+    const g = id => parseNum($(id).value);
     const n = g('p-nose'), l = g('p-left'), r = g('p-right'), an = g('p-anose'), am = g('p-amain');
-    if (![n, l, r, an, am].every(x => x > 0)) { showError({ error: 'Complete los tres pesos de ruedas y los dos brazos con valores mayores que 0.' }); return; }
+    if (![n, l, r, an, am].every(x => x > 0)) { showError({ error: 'Complete los tres pesos de ruedas y los dos brazos con números mayores que 0 (use coma o punto para los decimales).' }); return; }
     const w = n + l + r;
-    $('e-we').value = w.toFixed(1);
-    $('e-xe').value = ((n * an + (l + r) * am) / w).toFixed(3);
+    $('e-we').value = toField(w.toFixed(1));
+    $('e-xe').value = toField(((n * an + (l + r) * am) / w).toFixed(3));
     showError(null);
   });
   $('ed-del').addEventListener('click', () => { $('del-text').textContent = '¿Eliminar el avión ' + editing + ' de este teléfono?'; $('del-confirm').hidden = false; });
