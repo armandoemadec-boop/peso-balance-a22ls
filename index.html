@@ -142,6 +142,13 @@ svg text { font-family: var(--display); font-size: 11px; fill: var(--muted); }
 .fixed, .warn { font-size: 12.5px; color: var(--muted); margin: 0; }
 .warn b { color: var(--ink); }
 @media (prefers-reduced-motion: reduce) { .wheel { scroll-behavior: auto; } }
+/* pantallas angostas (iPhone SE): títulos de ruedas más compactos */
+@media (max-width: 360px) {
+  .wheels { gap: 4px; }
+  .panel { padding: 10px; }
+  .wcol label { text-transform: none; font-size: 10px; letter-spacing: 0; }
+  .wheel div { font-size: 18px; } .wheel div.sel { font-size: 20px; }
+}
 </style>
 </head>
 <body>
