@@ -152,16 +152,30 @@ svg text { font-family: var(--display); font-size: 11px; fill: var(--muted); }
   .wcol label { text-transform: none; font-size: 10px; letter-spacing: 0; }
   .wheel div { font-size: 18px; } .wheel div.sel { font-size: 20px; }
 }
+
+/* editor de parámetros */
+.fgroup { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
+.fgroup h3 { font: 600 12.5px var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.hint { font-size: 12.5px; color: var(--muted); margin: 8px 0; }
+.lims { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ltab { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; align-content: start; min-width: 0; }
+.ltab .lt { grid-column: 1 / -1; font-weight: 600; font-size: 13px; }
+.ltab .lh { font-size: 11.5px; color: var(--muted); }
+.ltab input { font: 600 16px var(--display); font-variant-numeric: tabular-nums; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; padding: 7px 6px; width: 100%; min-width: 0; }
+.ltab input[aria-invalid="true"] { border-color: var(--bad); }
+.params { margin: 12px 0 0; font-size: 12.5px; color: var(--muted); }
+@media (max-width: 360px) { .lims { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <p class="eyebrow">Peso y Balance · Aeroprakt A-22LS</p>
+    <p class="eyebrow" id="hmodel">Peso y Balance</p>
     <h1 id="hreg"></h1>
     <p class="acinfo" id="ac-info"></p>
     <button type="button" class="linkbtn" id="go-ac">Cambiar o editar avión ↓</button>
-    <p class="note" id="ac-example" hidden>Está usando el avión de ejemplo del POH. Agregue su avión con matrícula y pesaje en <b>Aviones</b>, al final de la página.</p>
+    <p class="note" id="ac-example" hidden>Está usando el avión de ejemplo del POH del A-22LS. Agregue su avión con matrícula, pesaje y parámetros en <b>Aviones</b>, al final de la página.</p>
   </header>
 
   <div class="verdict" id="verdict" role="status" aria-live="polite">
@@ -216,33 +230,71 @@ svg text { font-family: var(--display); font-size: 11px; fill: var(--muted); }
       <div id="ac-del-text"></div>
       <div class="btns"><button type="button" id="ac-del-yes" class="danger primary">Sí, eliminar</button><button type="button" id="ac-del-no">No</button></div>
     </div>
+    <p class="params" id="ac-params"></p>
   </section>
 
   <section class="panel" id="editor" hidden aria-labelledby="ed-title">
     <h2 id="ed-title">Nuevo avión</h2>
+    <p class="hint" id="ed-tpl"></p>
     <form id="ed-form" novalidate>
       <div class="fields">
-        <label for="e-reg" class="full">Matrícula
+        <label for="e-reg">Matrícula
           <input id="e-reg" class="reg" type="text" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CCABC">
-          <small>5 a 6 caracteres, solo letras y números (sin guion ni espacios)</small>
+          <small>5 a 6 letras o números, sin guion</small>
         </label>
-        <label for="e-we">Peso vacío (kg)<input id="e-we" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
-        <label for="e-xe">CG vacío (m)<input id="e-xe" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
-        <label for="e-cap">Capacidad combustible (l)<input id="e-cap" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" class="dec"><small>90 o 114 l según versión</small></label>
-        <label for="e-mtow">MTOW (kg)<input id="e-mtow" type="text" inputmode="decimal" autocomplete="off" class="dec"><small>Máx. 600 kg; menor si así está certificado</small></label>
+        <label for="e-model">Modelo<input id="e-model" type="text" maxlength="40" autocomplete="off" placeholder="Aeroprakt A-22LS"></label>
         <label for="e-date" class="full">Fecha del pesaje<input id="e-date" type="date"></label>
       </div>
-      <details class="weigh">
-        <summary>Calcular peso y CG vacío desde el pesaje por ruedas</summary>
+
+      <div class="fgroup">
+        <h3>Peso vacío</h3>
         <div class="fields">
-          <label for="p-nose">Rueda delantera (kg)<input id="p-nose" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
-          <label for="p-anose">Brazo delantera (m)<input id="p-anose" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
-          <label for="p-left">Rueda izquierda (kg)<input id="p-left" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
-          <label for="p-right">Rueda derecha (kg)<input id="p-right" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
-          <label for="p-amain" class="full">Brazo ruedas principales (m)<input id="p-amain" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+          <label for="e-we">Peso vacío (kg)<input id="e-we" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+          <label for="e-xe">CG vacío (m)<input id="e-xe" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
         </div>
-        <div class="btns"><button type="button" id="p-calc">Usar estos valores</button></div>
-      </details>
+        <details class="weigh">
+          <summary>Calcular peso y CG vacío desde el pesaje por ruedas</summary>
+          <div class="fields">
+            <label for="p-nose">Rueda delantera (kg)<input id="p-nose" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+            <label for="p-anose">Brazo delantera (m)<input id="p-anose" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+            <label for="p-left">Rueda izquierda (kg)<input id="p-left" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+            <label for="p-right">Rueda derecha (kg)<input id="p-right" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+            <label for="p-amain" class="full">Brazo ruedas principales (m)<input id="p-amain" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+          </div>
+          <div class="btns"><button type="button" id="p-calc">Usar estos valores</button></div>
+        </details>
+      </div>
+
+      <div class="fgroup">
+        <h3>Peso máximo y envolvente de CG</h3>
+        <div class="fields">
+          <label for="e-mtow" class="full">MTOW (kg)<input id="e-mtow" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+        </div>
+        <p class="hint">Ingrese los puntos de cada límite como aparecen en el POH (peso y CG). Con un solo punto el límite es constante; con varios, cambia en línea recta entre ellos según el peso. Las filas vacías se ignoran.</p>
+        <div class="lims">
+          <div class="ltab" id="t-fwd"><div class="lt">Límite delantero</div><div class="lh">Peso kg</div><div class="lh">CG m</div></div>
+          <div class="ltab" id="t-aft"><div class="lt">Límite trasero</div><div class="lh">Peso kg</div><div class="lh">CG m</div></div>
+        </div>
+        <p class="hint">% MAC es opcional: si se deja en blanco, la app muestra el CG solo en metros.</p>
+        <div class="fields">
+          <label for="e-lemac">Borde de ataque MAC (m)<input id="e-lemac" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+          <label for="e-mac">Largo de la MAC (m)<input id="e-mac" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+        </div>
+      </div>
+
+      <div class="fgroup">
+        <h3>Brazos y cargas</h3>
+        <div class="fields">
+          <label for="e-armcrew">Brazo tripulación (m)<input id="e-armcrew" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+          <label for="e-armbag">Brazo equipaje (m)<input id="e-armbag" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+          <label for="e-armfuel">Brazo combustible (m)<input id="e-armfuel" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+          <label for="e-bagmax">Equipaje máximo (kg)<input id="e-bagmax" type="text" inputmode="decimal" autocomplete="off" class="dec"></label>
+          <label for="e-cap">Capacidad combustible (l)<input id="e-cap" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" class="dec"></label>
+          <label for="e-unus">No utilizable (l)<input id="e-unus" type="text" inputmode="decimal" autocomplete="off" class="dec"><small>Total de todos los estanques</small></label>
+        </div>
+        <div class="btns"><button type="button" id="ed-a22">Usar valores del A-22LS (POH)</button></div>
+      </div>
+
       <p class="err" id="ed-err" role="alert" hidden></p>
       <div class="btns">
         <button type="submit" class="primary">Guardar avión</button>
@@ -256,115 +308,197 @@ svg text { font-family: var(--display); font-size: 11px; fill: var(--muted); }
     </form>
   </section>
 
-  <p class="fixed">Método de momentos del POH, sección 7; datum: brida del motor. Valores fijos del modelo A-22LS: CG 1,47 a 1,78 m (19 a 37 % MAC) · equipaje máx. 20 kg · brazos: tripulación 1,60 m, equipaje 2,30 m, combustible 2,00 m · combustible no utilizable 1 l (0,5 l por estanque), que no se puede consumir y cuyo peso se mantiene a bordo.</p>
-  <p class="warn"><b>Importante:</b> los aviones se guardan solo en este teléfono. Use el pesaje vigente de cada matrícula. Esta app es una ayuda de cálculo y no reemplaza al POH ni la responsabilidad del piloto al mando.</p>
+  <p class="fixed">Método de momentos: peso × brazo = momento; CG = momento total / peso total. Los brazos se miden desde el datum del POH de cada avión. El combustible no utilizable no se puede consumir y su peso se mantiene a bordo.</p>
+  <p class="warn"><b>Importante:</b> los aviones se guardan solo en este teléfono. Use el pesaje vigente y los datos del POH de cada matrícula. Esta app es una ayuda de cálculo y no reemplaza al POH ni la responsabilidad del piloto al mando.</p>
 </div>
 
 <script>
-const K = { mtowMax: 600, fwd: 1.47, aft: 1.78, macFwd: 19, macAft: 37, armCrew: 1.60, armBag: 2.30, armFuel: 2.00, dens: 0.75, densMin: 0.70, densMax: 0.75, bagMax: 20, unusable: 1 /* 0,5 l por estanque × 2 */, noseArm: 0.532, mainArm: 1.794 };
-const MAC = (K.aft - K.fwd) / ((K.macAft - K.macFwd) / 100), LEMAC = K.fwd - K.macFwd / 100 * MAC;
-const EXAMPLE = { reg: 'Ejemplo POH', we: 318.1, xe: 1.512, cap: 90, mtow: 600, date: '', example: true };
+// Valores del Aeroprakt A-22LS según POH A22LS-POH-04, sección 7 (plantilla y avión de ejemplo).
+const A22 = { model: 'Aeroprakt A-22LS', mtow: 600, fwd: [[600, 1.47]], aft: [[600, 1.78]], lemac: 1.1428, mac: 1.7222,
+  armCrew: 1.60, armBag: 2.30, armFuel: 2.00, bagMax: 20, cap: 90, unusable: 1 };
+const K = { dens: 0.75, densMin: 0.70, densMax: 0.75, noseArm: 0.532, mainArm: 1.794, rows: 5 };
+const EXAMPLE = Object.assign({}, A22, { reg: 'Ejemplo POH', we: 318.1, xe: 1.512, date: '', example: true });
 const REG_RE = /^[A-Z0-9]{5,6}$/;
+const ITEM = 38;
+const MODEL_KEYS = ['model', 'mtow', 'fwd', 'aft', 'lemac', 'mac', 'armCrew', 'armBag', 'armFuel', 'bagMax', 'cap', 'unusable'];
+
 // Acepta coma o punto decimal ("318,1" o "318.1"). Devuelve NaN si el texto no es un número.
 function parseNum(x) {
   if (typeof x === 'number') return x;
   const t = String(x == null ? '' : x).trim().replace(',', '.');
   return /^\d+(\.\d+)?$/.test(t) ? Number(t) : NaN;
 }
-const ITEM = 38;
+// Completa con los valores del A-22LS los aviones guardados en versiones anteriores de la app.
+function normalize(a) {
+  const n = Object.assign({}, A22, a);
+  if (!Array.isArray(n.fwd) || !n.fwd.length) n.fwd = A22.fwd;
+  if (!Array.isArray(n.aft) || !n.aft.length) n.aft = A22.aft;
+  return n;
+}
+// Límite de CG a un peso dado: interpolación lineal entre los puntos; fuera del rango se mantiene el extremo.
+function limitAt(tab, w) {
+  const t = tab.slice().sort((a, b) => a[0] - b[0]), n = t.length;
+  if (w <= t[0][0]) return t[0][1];
+  if (w >= t[n - 1][0]) return t[n - 1][1];
+  for (let i = 0; i < n - 1; i++) if (w <= t[i + 1][0]) return t[i][1] + (w - t[i][0]) * (t[i + 1][1] - t[i][1]) / (t[i + 1][0] - t[i][0]);
+}
+const es = (n, d) => (d == null ? String(n) : n.toFixed(d)).replace('.', ',');
 
 function calc(ac, v) {
   const dens = Math.min(Math.max(v.dens || K.dens, K.densMin), K.densMax);
-  const pct = x => (x - LEMAC) / MAC * 100;
+  const pct = x => ac.mac > 0 ? (x - ac.lemac) / ac.mac * 100 : null;
   const zfW = ac.we + v.pilot + v.pax + v.bag;
-  const zfM = ac.we * ac.xe + (v.pilot + v.pax) * K.armCrew + v.bag * K.armBag;
+  const zfM = ac.we * ac.xe + (v.pilot + v.pax) * ac.armCrew + v.bag * ac.armBag;
   // El combustible no utilizable queda siempre a bordo: lo consumido nunca supera el utilizable.
-  const usable = Math.max(0, v.fuel - K.unusable), burned = Math.min(v.burn, usable) * dens, rest = Math.min(v.fuel, K.unusable) * dens;
-  const toW = zfW + v.fuel * dens, toM = zfM + v.fuel * dens * K.armFuel;
-  const ldW = toW - burned, ldM = toM - burned * K.armFuel;
-  const cond = (name, w, m) => { const cg = w > 0 ? m / w : 0; return { name, w, cg, pct: pct(cg), ok: w <= ac.mtow && cg >= K.fwd && cg <= K.aft }; };
-  const to = cond('Despegue', toW, toM), ld = cond('Aterrizaje', ldW, ldM), zf = cond('Sin comb. útil', zfW + rest, zfM + rest * K.armFuel);
-  const chk = (what, lim, val, unit, dec, min, max) => ({ what, lim, val, unit, dec, ok: val >= min && val <= max });
-  const cgLim = 'entre 1,47 y 1,78 m';
-  const es = n => String(n).replace('.', ',');
+  const usable = Math.max(0, Math.round((v.fuel - ac.unusable) * 10) / 10);
+  const burned = Math.min(v.burn, usable) * dens, rest = Math.min(v.fuel, ac.unusable) * dens;
+  const toW = zfW + v.fuel * dens, toM = zfM + v.fuel * dens * ac.armFuel;
+  const ldW = toW - burned, ldM = toM - burned * ac.armFuel;
+  const cond = (name, w, m) => {
+    const cg = w > 0 ? m / w : 0, fwd = limitAt(ac.fwd, w), aft = limitAt(ac.aft, w);
+    return { name, w, cg, fwd, aft, pct: pct(cg), ok: w <= ac.mtow && cg >= fwd - 1e-9 && cg <= aft + 1e-9 };
+  };
+  const to = cond('Despegue', toW, toM), ld = cond('Aterrizaje', ldW, ldM), zf = cond('Sin comb. útil', zfW + rest, zfM + rest * ac.armFuel);
+  const chk = (what, lim, val, unit, dec, min, max) => ({ what, lim, val, unit, dec, ok: val >= min - 1e-9 && val <= max + 1e-9 });
+  const cgLim = c => 'a ' + es(c.w, 1) + ' kg: ' + es(c.fwd, 3) + ' a ' + es(c.aft, 3) + ' m';
   const checks = [
     chk('Peso al despegue', 'máx. ' + es(ac.mtow) + ' kg', toW, 'kg', 1, 0, ac.mtow),
-    chk('CG al despegue', cgLim, to.cg, 'm', 3, K.fwd, K.aft),
-    chk('CG al aterrizaje', cgLim, ld.cg, 'm', 3, K.fwd, K.aft),
-    chk('CG sin combustible útil', cgLim, zf.cg, 'm', 3, K.fwd, K.aft),
-    chk('Equipaje', 'máx. ' + K.bagMax + ' kg', v.bag, 'kg', 0, 0, K.bagMax),
+    chk('CG al despegue', cgLim(to), to.cg, 'm', 3, to.fwd, to.aft),
+    chk('CG al aterrizaje', cgLim(ld), ld.cg, 'm', 3, ld.fwd, ld.aft),
+    chk('CG sin combustible útil', cgLim(zf), zf.cg, 'm', 3, zf.fwd, zf.aft),
+    chk('Equipaje', 'máx. ' + es(ac.bagMax) + ' kg', v.bag, 'kg', 0, 0, ac.bagMax),
     chk('Combustible al despegue', 'máx. ' + ac.cap + ' l', v.fuel, 'l', 0, 0, ac.cap),
-    chk('Combustible a consumir', 'máx. ' + usable + ' l (utilizable)', v.burn, 'l', 0, 0, usable),
+    chk('Combustible a consumir', 'máx. ' + es(usable) + ' l (utilizable)', v.burn, 'l', 0, 0, usable),
   ];
-  return { to, ld, zf, checks, margin: ac.mtow - toW, ok: checks.every(c => c.ok) };
+  return { to, ld, zf, checks, usable, margin: ac.mtow - toW, ok: checks.every(c => c.ok) };
 }
 
-// Valida los datos de un avión. Devuelve { ac } o { error, field }.
+// Valida los datos de un avión. f trae los textos del formulario; fwd y aft son filas [peso, cg].
+// Devuelve { ac } o { error, id } (id = campo a marcar).
 function validateAircraft(f, list, editingReg) {
+  const E = (id, error) => ({ id, error });
   const reg = String(f.reg || '').trim().toUpperCase();
-  if (!REG_RE.test(reg)) return { field: 'reg', error: 'La matrícula debe tener 5 a 6 caracteres, solo letras y números (sin guion ni espacios).' };
-  if (reg !== editingReg && list.some(a => a.reg === reg)) return { field: 'reg', error: 'Ya existe un avión con la matrícula ' + reg + '.' };
-  const we = parseNum(f.we), xe = parseNum(f.xe), cap = parseNum(f.cap), mtow = parseNum(f.mtow);
-  if (!(we >= 200 && we <= 500)) return { field: 'we', error: 'El peso vacío debe estar entre 200 y 500 kg. Revise la hoja de pesaje.' };
-  if (!(xe >= 1.30 && xe <= 1.90)) return { field: 'xe', error: 'El CG vacío debe estar entre 1,30 y 1,90 m desde la brida del motor. Revise la hoja de pesaje.' };
-  if (!(cap >= 1 && cap <= 150 && Number.isInteger(cap))) return { field: 'cap', error: 'La capacidad de combustible debe ser un número entero entre 1 y 150 litros.' };
-  if (!(mtow >= 400 && mtow <= K.mtowMax)) return { field: 'mtow', error: 'El MTOW debe estar entre 400 y 600 kg (600 kg es el máximo del A-22LS).' };
-  if (we >= mtow) return { field: 'we', error: 'El peso vacío debe ser menor que el MTOW.' };
-  return { ac: { reg, we, xe, cap, mtow, date: f.date || '' } };
+  if (!REG_RE.test(reg)) return E('e-reg', 'La matrícula debe tener 5 a 6 caracteres, solo letras y números (sin guion ni espacios).');
+  if (reg !== editingReg && list.some(a => a.reg === reg)) return E('e-reg', 'Ya existe un avión con la matrícula ' + reg + '.');
+  const model = String(f.model || '').trim();
+  if (!model) return E('e-model', 'Indique el modelo del avión (por ejemplo, Aeroprakt A-22LS).');
+  const n = k => parseNum(f[k]);
+  const mtow = n('mtow'), we = n('we'), xe = n('xe');
+  if (!(mtow >= 100 && mtow <= 5700)) return E('e-mtow', 'El MTOW debe estar entre 100 y 5.700 kg.');
+  if (!(we > 0 && we < mtow)) return E('e-we', 'El peso vacío debe ser mayor que 0 y menor que el MTOW.');
+  if (!(xe > 0 && xe <= 15)) return E('e-xe', 'El CG vacío debe estar entre 0 y 15 m desde el datum.');
+  const tab = (rows, pre, label) => {
+    const out = [];
+    for (let i = 0; i < rows.length; i++) {
+      const [ws, cs] = rows[i].map(x => String(x == null ? '' : x).trim());
+      if (!ws && !cs) continue;
+      const w = parseNum(ws), c = parseNum(cs);
+      if (!(w > 0 && w <= 2 * mtow)) return E(pre + 'w' + i, label + ', fila ' + (i + 1) + ': el peso debe ser un número mayor que 0 y hasta el doble del MTOW.');
+      if (!(c > 0 && c <= 15)) return E(pre + 'c' + i, label + ', fila ' + (i + 1) + ': el CG debe estar entre 0 y 15 m.');
+      if (out.some(p => p[0] === w)) return E(pre + 'w' + i, label + ': hay dos filas con el mismo peso (' + es(w) + ' kg).');
+      out.push([w, c]);
+    }
+    if (!out.length) return E(pre + 'w0', label + ': ingrese al menos un punto (peso y CG).');
+    return out.sort((a, b) => a[0] - b[0]);
+  };
+  const fwd = tab(f.fwd || [], 'lf-', 'Límite delantero'); if (fwd.error) return fwd;
+  const aft = tab(f.aft || [], 'la-', 'Límite trasero'); if (aft.error) return aft;
+  const probe = fwd.concat(aft).map(p => p[0]).concat([we, mtow]);
+  for (const w of probe) if (!(limitAt(fwd, w) < limitAt(aft, w))) return E('lf-c0', 'El límite delantero debe quedar por delante del trasero en todos los pesos (revise a ' + es(w) + ' kg).');
+  const lemacS = String(f.lemac || '').trim(), macS = String(f.mac || '').trim();
+  let lemac = null, mac = null;
+  if (lemacS || macS) {
+    lemac = parseNum(lemacS); mac = parseNum(macS);
+    if (!(lemac >= 0 && lemac <= 15)) return E('e-lemac', 'El borde de ataque de la MAC debe estar entre 0 y 15 m (o deje ambos campos de MAC en blanco).');
+    if (!(mac > 0.2 && mac <= 5)) return E('e-mac', 'El largo de la MAC debe estar entre 0,2 y 5 m (o deje ambos campos de MAC en blanco).');
+  }
+  const armCrew = n('armCrew'), armBag = n('armBag'), armFuel = n('armFuel'), bagMax = n('bagMax'), cap = n('cap'), unusable = n('unusable');
+  if (!(armCrew > 0 && armCrew <= 15)) return E('e-armcrew', 'El brazo de la tripulación debe estar entre 0 y 15 m.');
+  if (!(armBag > 0 && armBag <= 15)) return E('e-armbag', 'El brazo del equipaje debe estar entre 0 y 15 m.');
+  if (!(armFuel > 0 && armFuel <= 15)) return E('e-armfuel', 'El brazo del combustible debe estar entre 0 y 15 m.');
+  if (!(bagMax >= 0 && bagMax <= 500)) return E('e-bagmax', 'El equipaje máximo debe estar entre 0 y 500 kg.');
+  if (!(cap >= 1 && cap <= 1000 && Number.isInteger(cap))) return E('e-cap', 'La capacidad de combustible debe ser un número entero entre 1 y 1.000 litros.');
+  if (!(unusable >= 0 && unusable < cap)) return E('e-unus', 'El combustible no utilizable debe ser 0 o más y menor que la capacidad.');
+  return { ac: { reg, model, date: f.date || '', we, xe, mtow, fwd, aft, lemac, mac, armCrew, armBag, armFuel, bagMax, cap, unusable } };
 }
 
 if (typeof document !== 'undefined') (function () {
   const $ = id => document.getElementById(id);
   const fmt = (n, d) => n.toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d });
-  const toField = n => String(n).replace('.', ',');
+  const toField = n => n == null ? '' : String(n).replace('.', ',');
   const load = (k, def) => { try { return Object.assign({}, def, JSON.parse(localStorage.getItem(k) || '{}')); } catch (e) { return Object.assign({}, def); } };
   const save = (k, o) => { try { localStorage.setItem(k, JSON.stringify(o)); } catch (e) {} };
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
 
   const fleet = load('a22ls-fleet', { list: [], sel: '' });
   if (!Array.isArray(fleet.list)) fleet.list = [];
+  fleet.list = fleet.list.map(normalize);
   let v = load('a22ls-flight', { pilot: 90, pax: 90, bag: 20, fuel: 90, burn: 40, dens: K.dens });
   v.dens = Math.min(Math.max(Math.round((Number(v.dens) || K.dens) * 100) / 100, K.densMin), K.densMax);
   const allAc = () => fleet.list.slice().sort((a, b) => a.reg.localeCompare(b.reg)).concat([EXAMPLE]);
   const current = () => allAc().find(a => a.reg === fleet.sel) || allAc()[0];
   let ac = current();
   const wheels = {};
+  const tabTxt = t => t.length === 1 ? es(t[0][1]) + ' m' : t.map(p => es(p[1]) + ' m a ' + es(p[0]) + ' kg').join(' → ');
 
   // ---------------- selector de avión
   function renderAcList() {
     const sel = $('ac-sel');
     sel.innerHTML = '';
-    for (const a of allAc()) { const o = document.createElement('option'); o.value = a.reg; o.textContent = a.reg; sel.appendChild(o); }
+    for (const a of allAc()) { const o = document.createElement('option'); o.value = a.reg; o.textContent = a.reg + (a.example ? '' : ' · ' + a.model); sel.appendChild(o); }
     sel.value = ac.reg;
     $('hreg').textContent = ac.reg;
+    $('hmodel').textContent = 'Peso y Balance · ' + ac.model;
     $('ac-edit').disabled = !!ac.example;
     $('ac-del').disabled = !!ac.example;
     $('ac-del-confirm').hidden = true;
     $('ac-example').hidden = !ac.example;
     $('ac-info').textContent = 'Peso vacío ' + fmt(ac.we, 1) + ' kg · CG vacío ' + fmt(ac.xe, 3) + ' m · ' + ac.cap + ' l · MTOW ' + toField(ac.mtow) + ' kg' +
       (ac.date ? ' · pesaje ' + ac.date.split('-').reverse().join('-') : '');
+    $('ac-params').textContent = 'Parámetros de ' + ac.reg + ' (' + ac.model + '): límite delantero ' + tabTxt(ac.fwd) + ' · límite trasero ' + tabTxt(ac.aft) +
+      (ac.mac > 0 ? ' · MAC ' + es(ac.mac) + ' m desde ' + es(ac.lemac) + ' m' : ' · sin % MAC') +
+      ' · brazos: tripulación ' + es(ac.armCrew) + ' m, equipaje ' + es(ac.armBag) + ' m, combustible ' + es(ac.armFuel) + ' m · equipaje máx. ' + es(ac.bagMax) +
+      ' kg · combustible ' + ac.cap + ' l, no utilizable ' + es(ac.unusable) + ' l.';
   }
   function selectAc(reg) {
     fleet.sel = reg; save('a22ls-fleet', fleet);
     ac = current();
     renderAcList();
-    if (wheels.fuel) { fillWheel(wheels.fuel); fillWheel(wheels.burn); save('a22ls-flight', v); }
+    if (wheels.fuel) { fillWheel(wheels.bag); fillWheel(wheels.fuel); fillWheel(wheels.burn); save('a22ls-flight', v); }
     render();
   }
   $('ac-sel').addEventListener('change', e => { closeEditor(); selectAc(e.target.value); window.scrollTo({ top: 0, behavior: 'smooth' }); });
   $('go-ac').addEventListener('click', () => $('avion').scrollIntoView({ behavior: 'smooth', block: 'start' }));
 
   // ---------------- editor
+  for (const [box, pre] of [['t-fwd', 'lf-'], ['t-aft', 'la-']]) {
+    let h = '';
+    for (let i = 0; i < K.rows; i++) h += '<input id="' + pre + 'w' + i + '" type="text" inputmode="decimal" autocomplete="off" class="dec" aria-label="Peso fila ' + (i + 1) + '">' +
+      '<input id="' + pre + 'c' + i + '" type="text" inputmode="decimal" autocomplete="off" class="dec" aria-label="CG fila ' + (i + 1) + '">';
+    $(box).insertAdjacentHTML('beforeend', h);
+  }
   let editing = null; // null = nuevo; matrícula = edición
-  const F = { reg: 'e-reg', we: 'e-we', xe: 'e-xe', cap: 'e-cap', mtow: 'e-mtow', date: 'e-date' };
+  const FIELDS = { reg: 'e-reg', model: 'e-model', date: 'e-date', we: 'e-we', xe: 'e-xe', mtow: 'e-mtow', lemac: 'e-lemac', mac: 'e-mac',
+    armCrew: 'e-armcrew', armBag: 'e-armbag', armFuel: 'e-armfuel', bagMax: 'e-bagmax', cap: 'e-cap', unusable: 'e-unus' };
+  function fillModel(m) {
+    $('e-model').value = m.model; $('e-mtow').value = toField(m.mtow);
+    $('e-lemac').value = toField(m.lemac); $('e-mac').value = toField(m.mac);
+    $('e-armcrew').value = toField(m.armCrew); $('e-armbag').value = toField(m.armBag); $('e-armfuel').value = toField(m.armFuel);
+    $('e-bagmax').value = toField(m.bagMax); $('e-cap').value = m.cap; $('e-unus').value = toField(m.unusable);
+    for (const [pre, t] of [['lf-', m.fwd], ['la-', m.aft]]) for (let i = 0; i < K.rows; i++) {
+      $(pre + 'w' + i).value = t[i] ? toField(t[i][0]) : ''; $(pre + 'c' + i).value = t[i] ? toField(t[i][1]) : '';
+    }
+  }
   function openEditor(a) {
     editing = a ? a.reg : null;
     $('ed-title').textContent = a ? 'Editar ' + a.reg : 'Nuevo avión';
+    const tpl = a || ac;
+    fillModel(tpl);
+    $('ed-tpl').textContent = a ? '' : 'Parámetros copiados de ' + tpl.reg + ' (' + tpl.model + '). Ajústelos con el POH si el avión es distinto.';
+    $('ed-tpl').hidden = !!a;
     $('e-reg').value = a ? a.reg : '';
     $('e-we').value = a ? toField(a.we) : '';
     $('e-xe').value = a ? toField(a.xe) : '';
-    $('e-cap').value = a ? a.cap : 90;
-    $('e-mtow').value = a ? toField(a.mtow) : 600;
     $('e-date').value = a ? a.date : '';
     $('p-anose').value = toField(K.noseArm); $('p-amain').value = toField(K.mainArm);
     ['p-nose', 'p-left', 'p-right'].forEach(id => $(id).value = '');
@@ -377,9 +511,9 @@ if (typeof document !== 'undefined') (function () {
   }
   function closeEditor() { $('editor').hidden = true; editing = null; }
   function showError(res) {
-    for (const k in F) $(F[k]).removeAttribute('aria-invalid');
+    document.querySelectorAll('#ed-form [aria-invalid]').forEach(el => el.removeAttribute('aria-invalid'));
     $('ed-err').hidden = !res;
-    if (res) { $('ed-err').textContent = res.error; if (res.field) { $(F[res.field]).setAttribute('aria-invalid', 'true'); $(F[res.field]).focus(); } }
+    if (res) { $('ed-err').textContent = res.error; if (res.id && $(res.id)) { $(res.id).setAttribute('aria-invalid', 'true'); $(res.id).focus(); } }
   }
   $('e-reg').addEventListener('input', e => { const p = e.target.selectionStart; e.target.value = e.target.value.toUpperCase(); e.target.setSelectionRange(p, p); });
   document.querySelectorAll('input.dec').forEach(el => el.addEventListener('input', () => {
@@ -392,9 +526,12 @@ if (typeof document !== 'undefined') (function () {
   $('ac-new').addEventListener('click', () => openEditor(null));
   $('ac-edit').addEventListener('click', () => { if (!ac.example) openEditor(ac); });
   $('ed-cancel').addEventListener('click', closeEditor);
+  $('ed-a22').addEventListener('click', () => { fillModel(A22); showError(null); });
   $('ed-form').addEventListener('submit', e => {
     e.preventDefault();
-    const f = {}; for (const k in F) f[k] = $(F[k]).value;
+    const f = {}; for (const k in FIELDS) f[k] = $(FIELDS[k]).value;
+    const rows = pre => Array.from({ length: K.rows }, (_, i) => [$(pre + 'w' + i).value, $(pre + 'c' + i).value]);
+    f.fwd = rows('lf-'); f.aft = rows('la-');
     const res = validateAircraft(f, fleet.list, editing);
     if (res.error) { showError(res); return; }
     if (editing) fleet.list = fleet.list.filter(a => a.reg !== editing);
@@ -435,9 +572,9 @@ if (typeof document !== 'undefined') (function () {
   const defs = [
     { key: 'pilot', label: 'Piloto', unit: 'kg', max: () => 150, lim: () => 'sin límite individual' },
     { key: 'pax', label: 'Pasajero', unit: 'kg', max: () => 150, lim: () => '0 si vuela solo' },
-    { key: 'bag', label: 'Equipaje', unit: 'kg', max: () => 40, lim: () => 'máx. ' + K.bagMax + ' kg' },
+    { key: 'bag', label: 'Equipaje', unit: 'kg', max: () => Math.max(40, Math.ceil(ac.bagMax * 1.5)), lim: () => 'máx. ' + es(ac.bagMax) + ' kg' },
     { key: 'fuel', label: 'Combust.', unit: 'litros', max: () => ac.cap, lim: () => 'máx. ' + ac.cap + ' l' },
-    { key: 'burn', label: 'Consumo', unit: 'litros', max: () => ac.cap, lim: () => 'máx. ' + Math.max(0, v.fuel - K.unusable) + ' l' },
+    { key: 'burn', label: 'Consumo', unit: 'litros', max: () => ac.cap, lim: () => 'máx. ' + es(Math.max(0, Math.round((v.fuel - ac.unusable) * 10) / 10)) + ' l' },
   ];
   function buildWheel(d) {
     const col = document.createElement('div'); col.className = 'wcol';
@@ -478,15 +615,16 @@ if (typeof document !== 'undefined') (function () {
   // ---------------- resultados
   function render() {
     const r = calc(ac, v);
+    const pctTxt = p => p == null ? '—' : fmt(p, 1);
     $('dens-val').textContent = fmt(v.dens, 2) + ' kg/l';
     $('dens-dn').disabled = v.dens <= K.densMin; $('dens-up').disabled = v.dens >= K.densMax;
     $('verdict').classList.toggle('bad', !r.ok);
     $('vreg').textContent = ac.reg;
     $('vstate').innerHTML = r.ok ? 'DENTRO DE LÍMITES' : 'FUERA DE LÍMITES<small>NO DESPEGAR</small>';
     $('vtow').innerHTML = fmt(r.to.w, 1) + ' <span>kg</span>';
-    $('vcg').innerHTML = fmt(r.to.cg, 3) + ' <span>m · ' + fmt(r.to.pct, 1) + ' % MAC</span>';
+    $('vcg').innerHTML = fmt(r.to.cg, 3) + ' <span>m' + (r.to.pct == null ? '' : ' · ' + fmt(r.to.pct, 1) + ' % MAC') + '</span>';
     $('cgrows').innerHTML = [r.to, r.ld, r.zf].map(c => '<tr><td>' + c.name + '</td><td>' + fmt(c.w, 1) + '</td><td>' + fmt(c.cg, 3) + '</td><td>' +
-      fmt(c.pct, 1) + '</td><td><span class="chip' + (c.ok ? '' : ' bad') + '">' + (c.ok ? 'OK' : 'FUERA') + '</span></td></tr>').join('');
+      pctTxt(c.pct) + '</td><td><span class="chip' + (c.ok ? '' : ' bad') + '">' + (c.ok ? 'OK' : 'FUERA') + '</span></td></tr>').join('');
     $('checks').innerHTML = r.checks.map(c => '<li><div class="what">' + c.what + '<small>' + c.lim + '</small></div><div class="val">' + fmt(c.val, c.dec) + ' ' + c.unit +
       '</div><span class="chip' + (c.ok ? '' : ' bad') + '">' + (c.ok ? 'OK' : 'FUERA') + '</span></li>').join('');
     $('margin').textContent = fmt(r.margin, 1) + ' kg' + (r.margin < 0 ? ' · SOBREPESO' : '');
@@ -496,23 +634,36 @@ if (typeof document !== 'undefined') (function () {
     drawChart(r);
   }
 
+  const nice = (range, opts) => opts.find(s => range / s <= 7) || opts[opts.length - 1];
   function drawChart(r) {
-    const X0 = 1.40, X1 = 1.85, Y1 = 650, Y0 = Math.min(300, Math.floor((ac.we - 10) / 50) * 50);
-    const L = 34, R = 330, T = 8, B = 200;
-    const cl = (n, a, b) => Math.min(Math.max(n, a), b);
-    const sx = x => L + (cl(x, X0, X1) - X0) / (X1 - X0) * (R - L), sy = y => B - (cl(y, Y0, Y1) - Y0) / (Y1 - Y0) * (B - T);
+    const pts = [r.to, r.ld, r.zf];
+    const wb = Math.min(ac.we, ...ac.fwd.map(p => p[0]), ...ac.aft.map(p => p[0]), r.zf.w);
+    const envW = [wb, ac.mtow];
+    const bw = ws => ws.filter(w => w > wb && w < ac.mtow);
+    const fwdPath = [wb].concat(bw(ac.fwd.map(p => p[0]))).concat([ac.mtow]).map(w => [limitAt(ac.fwd, w), w]);
+    const aftPath = [wb].concat(bw(ac.aft.map(p => p[0]))).concat([ac.mtow]).map(w => [limitAt(ac.aft, w), w]).reverse();
+    const xs = fwdPath.concat(aftPath).map(p => p[0]).concat(pts.map(p => p.cg));
+    const ys = envW.concat(pts.map(p => p.w));
+    const xr = Math.max(...xs) - Math.min(...xs), yr = Math.max(...ys) - Math.min(...ys);
+    const xs_ = nice(xr + 0.04, [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1]), ys_ = nice(yr + 40, [10, 20, 25, 50, 100, 200, 250, 500]);
+    const X0 = Math.floor((Math.min(...xs) - xs_ / 2) / xs_) * xs_, X1 = Math.ceil((Math.max(...xs) + xs_ / 2) / xs_) * xs_;
+    const Y0 = Math.floor((Math.min(...ys) - ys_ / 2) / ys_) * ys_, Y1 = Math.ceil((Math.max(...ys) + ys_ / 2) / ys_) * ys_;
+    const L = 38, R = 330, T = 8, B = 200;
+    const xd = xs_ < 0.1 ? 2 : xs_ < 1 ? 1 : 0;
+    const sx = x => L + (Math.min(Math.max(x, X0), X1) - X0) / (X1 - X0) * (R - L), sy = y => B - (Math.min(Math.max(y, Y0), Y1) - Y0) / (Y1 - Y0) * (B - T);
     let s = '<rect x="' + L + '" y="' + T + '" width="' + (R - L) + '" height="' + (B - T) + '" fill="var(--bg)" stroke="var(--line)"/>';
-    for (let x = 1.40; x < 1.851; x += 0.05) {
+    const nx = Math.round((X1 - X0) / xs_), ny = Math.round((Y1 - Y0) / ys_);
+    for (let i = 0; i <= nx; i++) {
+      const x = X0 + i * xs_;
       s += '<line x1="' + sx(x) + '" x2="' + sx(x) + '" y1="' + T + '" y2="' + B + '" stroke="var(--line)" stroke-width="0.6"/>';
-      if (Math.round(x * 100) % 10 === 0) s += '<text x="' + sx(x) + '" y="' + (B + 13) + '" text-anchor="middle">' + fmt(x, 2) + '</text>';
+      if (nx <= 6 || i % 2 === 0) s += '<text x="' + sx(x) + '" y="' + (B + 13) + '" text-anchor="middle">' + fmt(x, xd) + '</text>';
     }
-    for (let y = Y0; y <= Y1; y += 50) {
+    for (let i = 0; i <= ny; i++) {
+      const y = Y0 + i * ys_;
       s += '<line x1="' + L + '" x2="' + R + '" y1="' + sy(y) + '" y2="' + sy(y) + '" stroke="var(--line)" stroke-width="0.6"/>';
-      if (y % 100 === 0) s += '<text x="' + (L - 5) + '" y="' + (sy(y) + 4) + '" text-anchor="end">' + y + '</text>';
+      if (ny <= 6 || i % 2 === 0) s += '<text x="' + (L - 5) + '" y="' + (sy(y) + 4) + '" text-anchor="end">' + Math.round(y) + '</text>';
     }
-    const yb = sy(Math.min(ac.we, ac.mtow));
-    s += '<rect x="' + sx(K.fwd) + '" y="' + sy(ac.mtow) + '" width="' + (sx(K.aft) - sx(K.fwd)) + '" height="' + (yb - sy(ac.mtow)) +
-      '" fill="var(--band)" stroke="var(--accent)" stroke-width="2"/>';
+    s += '<polygon points="' + fwdPath.concat(aftPath).map(p => sx(p[0]) + ',' + sy(p[1])).join(' ') + '" fill="var(--band)" stroke="var(--accent)" stroke-width="2"/>';
     s += '<text x="' + ((L + R) / 2) + '" y="226" text-anchor="middle">CG desde el datum (m) · peso (kg)</text>';
     const zx = sx(r.zf.cg), zy = sy(r.zf.w), lx = sx(r.ld.cg), ly = sy(r.ld.w);
     s += '<polyline points="' + zx + ',' + zy + ' ' + lx + ',' + ly + ' ' + sx(r.to.cg) + ',' + sy(r.to.w) + '" fill="none" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/>';
