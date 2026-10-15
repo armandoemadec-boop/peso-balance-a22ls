@@ -242,7 +242,7 @@ svg text { font-family: var(--display); font-size: 11px; fill: var(--muted); }
           <input id="e-reg" class="reg" type="text" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CCABC">
           <small>5 a 6 letras o números, sin guion</small>
         </label>
-        <label for="e-model">Modelo<input id="e-model" type="text" maxlength="40" autocomplete="off" placeholder="Aeroprakt A-22LS"></label>
+        <label for="e-model" class="full">Modelo<input id="e-model" type="text" maxlength="40" autocomplete="off" placeholder="Aeroprakt A-22LS"></label>
         <label for="e-date" class="full">Fecha del pesaje<input id="e-date" type="date"></label>
       </div>
 
@@ -515,6 +515,8 @@ if (typeof document !== 'undefined') (function () {
     $('ed-err').hidden = !res;
     if (res) { $('ed-err').textContent = res.error; if (res.id && $(res.id)) { $(res.id).setAttribute('aria-invalid', 'true'); $(res.id).focus(); } }
   }
+  // al corregir un campo marcado en rojo, quitar la marca
+  $('ed-form').addEventListener('input', e => e.target.removeAttribute('aria-invalid'));
   $('e-reg').addEventListener('input', e => { const p = e.target.selectionStart; e.target.value = e.target.value.toUpperCase(); e.target.setSelectionRange(p, p); });
   document.querySelectorAll('input.dec').forEach(el => el.addEventListener('input', () => {
     let t = el.value.replace(/[^0-9.,]/g, '');
@@ -661,7 +663,7 @@ if (typeof document !== 'undefined') (function () {
     for (let i = 0; i <= ny; i++) {
       const y = Y0 + i * ys_;
       s += '<line x1="' + L + '" x2="' + R + '" y1="' + sy(y) + '" y2="' + sy(y) + '" stroke="var(--line)" stroke-width="0.6"/>';
-      if (ny <= 6 || i % 2 === 0) s += '<text x="' + (L - 5) + '" y="' + (sy(y) + 4) + '" text-anchor="end">' + Math.round(y) + '</text>';
+      if (i > 0 && (ny <= 6 || i % 2 === 0)) s += '<text x="' + (L - 5) + '" y="' + (sy(y) + 4) + '" text-anchor="end">' + Math.round(y) + '</text>';
     }
     s += '<polygon points="' + fwdPath.concat(aftPath).map(p => sx(p[0]) + ',' + sy(p[1])).join(' ') + '" fill="var(--band)" stroke="var(--accent)" stroke-width="2"/>';
     s += '<text x="' + ((L + R) / 2) + '" y="226" text-anchor="middle">CG desde el datum (m) · peso (kg)</text>';
